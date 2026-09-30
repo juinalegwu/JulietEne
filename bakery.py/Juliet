@@ -1,0 +1,1197 @@
+"""
+Juliet's Sweet Treats — Bakery Order Calculator
+
+Features:
+- Multiple items per order
+- Add quantities
+- Update an existing item
+- Remove an item or reduce its quantity
+- Cash payment
+- Bank Transfer simulation
+- Card payment simulation
+- Receipt displayed on screen
+- Receipt saved as a .txt file
+
+Run with:
+
+    python3 bakery_calculator.py
+
+NOTE:
+The bank transfer flow is only a simulation. It does not connect to
+a real bank and cannot verify that money was actually transferred.
+"""
+
+import random
+import time
+from datetime import datetime
+
+
+# ============================================================
+# MENU
+# ============================================================
+
+MENU = {
+    1: ("vanilla cake", 7000),
+    2: ("chocolate cake", 8000),
+    3: ("red velvet cake", 9000),
+    4: ("doughnut", 500),
+    5: ("meat pie", 700),
+    6: ("samosa", 500),
+    7: ("spring roll", 500),
+    8: ("cupcake", 600),
+    9: ("buns", 400),
+}
+
+
+# ============================================================
+# BANK USSD CODES
+# ============================================================
+
+BANK_USSD_CODES = {
+    1: ("GTBank", "*737#"),
+    2: ("Access Bank", "*901#"),
+    3: ("Zenith Bank", "*966#"),
+    4: ("First Bank", "*894#"),
+    5: ("UBA", "*919#"),
+}
+
+
+# ============================================================
+# BAKERY ACCOUNT DETAILS
+# ============================================================
+
+BAKERY_ACCOUNT_NAME = "JULIET'S SWEET TREATS"
+
+# Placeholder account number.
+# Replace this with the bakery's real account number later.
+BAKERY_ACCOUNT_NUMBER = "0123456789"
+
+
+# ============================================================
+# HEADER
+# ============================================================
+
+def print_header():
+    print("================================")
+    print("       JULIET'S SWEET TREATS")
+    print("================================")
+
+
+# ============================================================
+# CHOOSE ITEM
+# ============================================================
+
+def choose_item():
+    print_header()
+
+    print("1. Vanilla Cake    - ₦7,000")
+    print("2. Chocolate Cake  - ₦8,000")
+    print("3. Red Velvet Cake - ₦9,000")
+    print("4. Doughnut        - ₦500")
+    print("5. Meat Pie        - ₦700")
+    print("6. Samosa          - ₦500")
+    print("7. Spring Roll     - ₦500")
+    print("8. Cupcake         - ₦600")
+    print("9. Buns            - ₦400")
+    print()
+
+    while True:
+        try:
+            choice = int(input("Choose an item (1-9): "))
+
+            if choice in MENU:
+                return MENU[choice]
+
+            print("Please enter a number between 1 and 9.")
+
+        except ValueError:
+            print("Please enter a valid number.")
+
+
+# ============================================================
+# CHOOSE QUANTITY
+# ============================================================
+
+def choose_quantity():
+
+    while True:
+        try:
+            quantity = int(input("Enter quantity: "))
+
+            if quantity > 0:
+                return quantity
+
+            print("Quantity must be at least 1.")
+
+        except ValueError:
+            print("Please enter a valid number.")
+
+
+# ============================================================
+# DISPLAY CART
+# ============================================================
+
+def print_cart_so_far(order_items):
+
+    running_total = sum(
+        subtotal for _, _, _, subtotal in order_items
+    )
+
+    print()
+    print("--- Cart so far ---")
+
+    if not order_items:
+        print("Your cart is empty.")
+    else:
+        for item, price, quantity, subtotal in order_items:
+            print(
+                f"{quantity} x {item} @ ₦{price:,} "
+                f"= ₦{subtotal:,}"
+            )
+
+    print("--------------------------------")
+    print(f"Running total: ₦{running_total:,}")
+
+
+# ============================================================
+# BUILD ORDER
+# ============================================================
+
+def build_order():
+
+    """
+    Allows the customer to:
+    - Choose an item
+    - Enter quantity
+    - Add another item
+    - Automatically combine duplicate items
+    """
+
+    order_items = []
+
+    while True:
+
+        item, price = choose_item()
+
+        quantity = choose_quantity()
+
+        # Check whether the item is already in the cart.
+        existing_index = None
+
+        for i, (existing_item, _, _, _) in enumerate(order_items):
+
+            if existing_item == item:
+                existing_index = i
+                break
+
+        # If item already exists, increase quantity.
+        if existing_index is not None:
+
+            _, _, old_quantity, _ = order_items[existing_index]
+
+            new_quantity = old_quantity + quantity
+
+            new_subtotal = price * new_quantity
+
+            order_items[existing_index] = (
+                item,
+                price,
+                new_quantity,
+                new_subtotal
+            )
+
+            print()
+            print(
+                f"Updated: {item} quantity is now "
+                f"{new_quantity} "
+                f"(₦{new_subtotal:,})"
+            )
+
+        # Otherwise add a new item.
+        else:
+
+            subtotal = price * quantity
+
+            order_items.append(
+                (item, price, quantity, subtotal)
+            )
+
+        print_cart_so_far(order_items)
+
+        # Ask if customer wants another item.
+        while True:
+
+            add_more = input(
+                "Add another item? (yes/no): "
+            ).strip().lower()
+
+            if add_more in ("yes", "no"):
+                break
+
+            print("Please answer yes or no.")
+
+        if add_more == "no":
+            break
+
+        print()
+
+    return order_items
+
+
+# ============================================================
+# REMOVE ITEM
+# ============================================================
+
+def remove_item(order_items):
+
+    """
+    Allows the customer to:
+    1. Remove an entire item from the cart
+    2. Reduce the quantity of an item
+    """
+
+    if not order_items:
+        print()
+        print("Your cart is empty.")
+        return order_items
+
+    while True:
+
+        print()
+        print("--- Remove an Item ---")
+
+        for index, (item, price, quantity, subtotal) in enumerate(
+            order_items,
+            start=1
+        ):
+            print(
+                f"{index}. {item} | "
+                f"Quantity: {quantity} | "
+                f"₦{subtotal:,}"
+            )
+
+        print("0. Done")
+
+        try:
+            choice = int(
+                input(
+                    "Choose the item you want to remove/reduce: "
+                )
+            )
+
+            if choice == 0:
+                break
+
+            if choice < 1 or choice > len(order_items):
+                print("Please choose a valid item number.")
+                continue
+
+            index = choice - 1
+
+            item, price, quantity, subtotal = order_items[index]
+
+            print()
+            print(f"Selected: {item}")
+            print(f"Current quantity: {quantity}")
+            print()
+            print("1. Remove the entire item")
+            print("2. Reduce quantity")
+            print("3. Cancel")
+
+            action = input("Choose an option (1-3): ").strip()
+
+            # ------------------------------------------------
+            # Remove entire item
+            # ------------------------------------------------
+
+            if action == "1":
+
+                removed_item = order_items.pop(index)
+
+                print()
+                print(
+                    f"Removed {removed_item[0]} "
+                    f"from the cart."
+                )
+
+            # ------------------------------------------------
+            # Reduce quantity
+            # ------------------------------------------------
+
+            elif action == "2":
+
+                if quantity == 1:
+
+                    print(
+                        "This item has quantity 1. "
+                        "It cannot be reduced further."
+                    )
+
+                    continue
+
+                while True:
+
+                    try:
+
+                        reduce_by = int(
+                            input(
+                                "How many would you like to remove? "
+                            )
+                        )
+
+                        if reduce_by <= 0:
+                            print(
+                                "Enter a quantity greater than 0."
+                            )
+                            continue
+
+                        if reduce_by >= quantity:
+
+                            print(
+                                "You cannot remove that many. "
+                                "Use option 1 to remove the entire item."
+                            )
+
+                            continue
+
+                        new_quantity = quantity - reduce_by
+
+                        new_subtotal = price * new_quantity
+
+                        order_items[index] = (
+                            item,
+                            price,
+                            new_quantity,
+                            new_subtotal
+                        )
+
+                        print()
+                        print(
+                            f"Updated {item}: "
+                            f"quantity is now {new_quantity}."
+                        )
+
+                        break
+
+                    except ValueError:
+
+                        print(
+                            "Please enter a valid number."
+                        )
+
+            # ------------------------------------------------
+            # Cancel
+            # ------------------------------------------------
+
+            elif action == "3":
+
+                print("No changes made.")
+
+            else:
+
+                print("Please choose 1, 2, or 3.")
+
+        except ValueError:
+
+            print("Please enter a valid number.")
+
+        # Display updated cart.
+        print_cart_so_far(order_items)
+
+    return order_items
+
+
+# ============================================================
+# RECEIPT
+# ============================================================
+
+def print_receipt(
+    customer_name,
+    order_items,
+    total,
+    payment_method=None,
+    payment_status=None,
+    reference=None,
+    change=None
+):
+
+    print()
+    print_header()
+
+    print("Customer:", customer_name)
+
+    print("--------------------------------")
+
+    for item, price, quantity, subtotal in order_items:
+
+        print(
+            f"{quantity} x {item} @ ₦{price:,} "
+            f"= ₦{subtotal:,}"
+        )
+
+    print("--------------------------------")
+
+    print(f"TOTAL: ₦{total:,}")
+
+    if payment_method:
+        print("Payment Method:", payment_method)
+
+    if payment_status:
+        print("Payment Status:", payment_status)
+
+    if reference:
+        print("Reference:", reference)
+
+    if change is not None:
+        print(f"Change due: ₦{change:,.2f}")
+
+    print("================================")
+
+
+# ============================================================
+# SAVE RECEIPT TO TEXT FILE
+# ============================================================
+
+def save_receipt_to_txt(
+    customer_name,
+    order_items,
+    total,
+    payment_method,
+    payment_status,
+    reference=None,
+    change=None
+):
+
+    """
+    Saves the final receipt to a .txt file.
+    """
+
+    timestamp = datetime.now().strftime(
+        "%Y-%m-%d_%H-%M-%S"
+    )
+
+    safe_name = "".join(
+        c if c.isalnum() else "_"
+        for c in customer_name
+    ) or "customer"
+
+    filename = (
+        f"receipt_{safe_name}_{timestamp}.txt"
+    )
+
+    lines = [
+
+        "================================",
+        "       JULIET'S SWEET TREATS",
+        "================================",
+
+        f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+
+        f"Customer: {customer_name}",
+
+        "--------------------------------",
+    ]
+
+    for item, price, quantity, subtotal in order_items:
+
+        lines.append(
+            f"{quantity} x {item} @ ₦{price:,} "
+            f"= ₦{subtotal:,}"
+        )
+
+    lines += [
+
+        "--------------------------------",
+
+        f"TOTAL: ₦{total:,}",
+
+        f"Payment Method: {payment_method}",
+
+        f"Payment Status: {payment_status}",
+    ]
+
+    if reference:
+
+        lines.append(
+            f"Reference: {reference}"
+        )
+
+    if change is not None:
+
+        lines.append(
+            f"Change due: ₦{change:,.2f}"
+        )
+
+    lines += [
+
+        "================================",
+        "       THANK YOU FOR ORDERING!",
+        "================================",
+    ]
+
+    with open(
+        filename,
+        "w",
+        encoding="utf-8"
+    ) as f:
+
+        f.write(
+            "\n".join(lines) + "\n"
+        )
+
+    return filename
+
+
+# ============================================================
+# CASH PAYMENT
+# ============================================================
+
+def pay_with_cash(total):
+
+    """
+    Calculates change owed for cash payment.
+    """
+
+    while True:
+
+        try:
+
+            amount_given = float(
+                input(
+                    f"Total due is ₦{total:,}. "
+                    f"Enter amount received from customer: ₦"
+                )
+            )
+
+        except ValueError:
+
+            print("Please enter a valid amount.")
+
+            continue
+
+        if amount_given < total:
+
+            shortfall = total - amount_given
+
+            print(
+                f"That's ₦{shortfall:,.2f} "
+                f"short of the total."
+            )
+
+            print(
+                "Please collect the remaining amount."
+            )
+
+            continue
+
+        change = amount_given - total
+
+        if change > 0:
+
+            print(
+                f"Change due to customer: "
+                f"₦{change:,.2f}"
+            )
+
+            return "PAID", None, change
+
+        else:
+
+            print(
+                "Exact amount received — "
+                "no change due."
+            )
+
+            return "PAID", None, None
+
+
+# ============================================================
+# BANK TRANSFER PAYMENT
+# ============================================================
+
+def pay_with_transfer(total):
+
+    """
+    Simulates a bank USSD transfer.
+
+    This is NOT a real bank transaction.
+    """
+
+    print()
+    print("Bank Transfer selected.")
+
+    print(
+        "Which bank is the customer "
+        "transferring from?"
+    )
+
+    for key, (bank_name, code) in BANK_USSD_CODES.items():
+
+        print(
+            f"{key}. {bank_name}"
+        )
+
+    while True:
+
+        try:
+
+            bank_choice = int(
+                input("Choose bank (1-5): ")
+            )
+
+            if bank_choice in BANK_USSD_CODES:
+                break
+
+            print(
+                "Please choose a number between 1 and 5."
+            )
+
+        except ValueError:
+
+            print("Please enter a valid number.")
+
+    bank_name, ussd_code = BANK_USSD_CODES[
+        bank_choice
+    ]
+
+    print()
+    print(f"Dialing {ussd_code} ...")
+
+    time.sleep(1)
+
+    print(
+        "Connecting to bank network..."
+    )
+
+    time.sleep(1)
+
+    # --------------------------------------------------------
+    # Main USSD menu
+    # --------------------------------------------------------
+
+    while True:
+
+        print()
+        print(
+            f"--- {bank_name} Mobile Banking ---"
+        )
+
+        print("1. Transfer")
+        print("2. Airtime/Data")
+        print("3. Balance Enquiry")
+        print("0. Exit")
+
+        main_choice = input(
+            "Select option: "
+        ).strip()
+
+        if main_choice == "1":
+
+            break
+
+        elif main_choice == "0":
+
+            print(
+                "Session ended by customer."
+            )
+
+            return "CANCELLED", None, None
+
+        else:
+
+            print(
+                "Please select 1 to Transfer."
+            )
+
+    # --------------------------------------------------------
+    # Transfer type
+    # --------------------------------------------------------
+
+    while True:
+
+        print()
+        print("--- Transfer ---")
+
+        print("1. Transfer to Other Bank")
+        print("2. Transfer to Same Bank")
+
+        transfer_type = input(
+            "Select option: "
+        ).strip()
+
+        if transfer_type in ("1", "2"):
+
+            break
+
+        print(
+            "Please select 1 or 2."
+        )
+
+    # --------------------------------------------------------
+    # Recipient details
+    # --------------------------------------------------------
+
+    print()
+
+    print(
+        f"Recipient: {BAKERY_ACCOUNT_NAME}"
+    )
+
+    entered_account = input(
+        f"Enter account number "
+        f"({BAKERY_ACCOUNT_NUMBER}): "
+    ).strip()
+
+    # --------------------------------------------------------
+    # Amount
+    # --------------------------------------------------------
+
+    print()
+
+    while True:
+
+        try:
+
+            entered_amount = float(
+                input(
+                    f"Enter amount to transfer "
+                    f"(₦{total:,}): "
+                )
+            )
+
+            break
+
+        except ValueError:
+
+            print(
+                "Please enter a valid amount."
+            )
+
+    # --------------------------------------------------------
+    # Confirmation
+    # --------------------------------------------------------
+
+    print()
+    print("--- Confirm Transaction ---")
+
+    print(f"Bank:      {bank_name}")
+
+    print(
+        f"Recipient: {BAKERY_ACCOUNT_NAME}"
+    )
+
+    print(
+        f"Account:   "
+        f"{entered_account or BAKERY_ACCOUNT_NUMBER}"
+    )
+
+    print(
+        f"Amount:    ₦{entered_amount:,.2f}"
+    )
+
+    print("1. Confirm")
+    print("2. Cancel")
+
+    while True:
+
+        confirm_choice = input(
+            "Select option: "
+        ).strip()
+
+        if confirm_choice == "1":
+
+            break
+
+        elif confirm_choice == "2":
+
+            print(
+                "Transaction cancelled by customer."
+            )
+
+            return "CANCELLED", None, None
+
+        else:
+
+            print(
+                "Please select 1 or 2."
+            )
+
+    # --------------------------------------------------------
+    # Process transaction
+    # --------------------------------------------------------
+
+    print()
+    print(
+        "Processing transaction..."
+    )
+
+    time.sleep(1.5)
+
+    # Simulated reference number.
+    reference = (
+        f"SIM{random.randint(100000000, 999999999)}"
+    )
+
+    print(
+        "Transaction Successful."
+    )
+
+    print(
+        f"Reference: {reference}"
+    )
+
+    print()
+
+    print(
+        "IMPORTANT: This reference is SIMULATED, "
+        "not from a real bank."
+    )
+
+    print(
+        "Please confirm the actual bank alert "
+        "before releasing the order."
+    )
+
+    # --------------------------------------------------------
+    # Check amount
+    # --------------------------------------------------------
+
+    print()
+
+    if entered_amount < total:
+
+        shortfall = total - entered_amount
+
+        print(
+            f"NOTICE: Amount transferred "
+            f"(₦{entered_amount:,.2f}) "
+            f"is ₦{shortfall:,.2f}"
+        )
+
+        print(
+            f"short of the total due "
+            f"(₦{total:,})."
+        )
+
+        print(
+            "Please ask the customer to transfer "
+            "the remaining balance."
+        )
+
+        return (
+            f"DECLINED — short by ₦{shortfall:,.2f}",
+            reference,
+            None
+        )
+
+    change = entered_amount - total
+
+    if change > 0:
+
+        print(
+            f"Amount transferred is "
+            f"₦{change:,.2f} more than the total."
+        )
+
+        print(
+            f"Change owed to customer: "
+            f"₦{change:,.2f}"
+        )
+
+        return (
+            "PENDING — confirm bank alert "
+            "before releasing order",
+            reference,
+            change
+        )
+
+    print(
+        "Amount transferred matches "
+        "the total exactly."
+    )
+
+    return (
+        "PENDING — confirm bank alert "
+        "before releasing order",
+        reference,
+        None
+    )
+
+
+# ============================================================
+# CARD PAYMENT
+# ============================================================
+
+def pay_with_card(total):
+
+    """
+    Simulates a card terminal flow.
+    """
+
+    print()
+
+    print("Card payment selected.")
+
+    print(
+        f"Please process ₦{total:,} "
+        f"on the physical card terminal (POS)."
+    )
+
+    input(
+        "Press Enter once the terminal "
+        "shows APPROVED... "
+    )
+
+    confirmed = input(
+        "Did the terminal print an APPROVED "
+        "receipt? (yes/no): "
+    ).strip().lower()
+
+    if confirmed == "yes":
+
+        return "PAID", None, None
+
+    else:
+
+        return (
+            "DECLINED — try another payment method",
+            None,
+            None
+        )
+
+
+# ============================================================
+# CHOOSE PAYMENT METHOD
+# ============================================================
+
+def choose_payment_method(total):
+
+    print()
+
+    print("Payment Methods")
+
+    print("1. Cash")
+    print("2. Bank Transfer")
+    print("3. Card")
+
+    while True:
+
+        try:
+
+            choice = int(
+                input(
+                    "Choose payment method (1-3): "
+                )
+            )
+
+        except ValueError:
+
+            print(
+                "Please enter a valid number."
+            )
+
+            continue
+
+        # Cash
+        if choice == 1:
+
+            status, reference, change = (
+                pay_with_cash(total)
+            )
+
+            return (
+                "Cash",
+                status,
+                reference,
+                change
+            )
+
+        # Bank transfer
+        elif choice == 2:
+
+            status, reference, change = (
+                pay_with_transfer(total)
+            )
+
+            return (
+                "Bank Transfer",
+                status,
+                reference,
+                change
+            )
+
+        # Card
+        elif choice == 3:
+
+            status, reference, change = (
+                pay_with_card(total)
+            )
+
+            return (
+                "Card",
+                status,
+                reference,
+                change
+            )
+
+        else:
+
+            print(
+                "Please choose 1, 2, or 3."
+            )
+
+
+# ============================================================
+# MAIN PROGRAM
+# ============================================================
+
+def main():
+
+    print_header()
+
+    print()
+
+    customer_name = input(
+        "Enter customer name: "
+    ).strip()
+
+    # --------------------------------------------------------
+    # Build the order
+    # --------------------------------------------------------
+
+    order_items = build_order()
+
+    # --------------------------------------------------------
+    # Ask whether customer wants to remove anything
+    # --------------------------------------------------------
+
+    while True:
+
+        print()
+
+        print("Order Options")
+
+        print("1. Continue to payment")
+        print("2. Remove/reduce an item")
+        print("3. View cart")
+
+        option = input(
+            "Choose an option (1-3): "
+        ).strip()
+
+        if option == "1":
+
+            break
+
+        elif option == "2":
+
+            order_items = remove_item(
+                order_items
+            )
+
+            # If customer removed everything,
+            # send them back to adding items.
+            if not order_items:
+
+                print()
+                print(
+                    "Your cart is empty."
+                )
+
+                print(
+                    "Please add an item."
+                )
+
+                order_items = build_order()
+
+        elif option == "3":
+
+            print_cart_so_far(
+                order_items
+            )
+
+        else:
+
+            print(
+                "Please choose 1, 2, or 3."
+            )
+
+    # --------------------------------------------------------
+    # Calculate total
+    # --------------------------------------------------------
+
+    total = sum(
+        subtotal
+        for _, _, _, subtotal in order_items
+    )
+
+    # --------------------------------------------------------
+    # Show order before payment
+    # --------------------------------------------------------
+
+    print()
+    print("--- FINAL ORDER ---")
+
+    print_cart_so_far(
+        order_items
+    )
+
+    # --------------------------------------------------------
+    # Payment
+    # --------------------------------------------------------
+
+    payment_method, payment_status, reference, change = (
+        choose_payment_method(total)
+    )
+
+    # --------------------------------------------------------
+    # Final receipt
+    # --------------------------------------------------------
+
+    print_receipt(
+        customer_name,
+        order_items,
+        total,
+        payment_method,
+        payment_status,
+        reference,
+        change
+    )
+
+    print()
+    print(
+        "       THANK YOU FOR ORDERING!"
+    )
+
+    print(
+        "================================"
+    )
+
+    # --------------------------------------------------------
+    # Save receipt
+    # --------------------------------------------------------
+
+    filename = save_receipt_to_txt(
+        customer_name,
+        order_items,
+        total,
+        payment_git config --global user.email "you@example.com"
+  git config --global user.name "Your Name"method,
+        payment_status,
+        reference,
+        change
+    )
+
+    print()
+
+    print(
+        f"Receipt saved to: {filename}"
+    )
+
+
+# ============================================================
+# START PROGRAM
+# ============================================================
+
+if __name__ == "__main__":
+    main()
