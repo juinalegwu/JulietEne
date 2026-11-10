@@ -263,6 +263,15 @@ def main():
         change
     )
 
+    order_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    save_order(
+        customer_name,
+        total,
+        payment_method,
+        payment_status,
+        reference,
+        order_date
+        )
 
 if __name__ == "__main__":
     main()
