@@ -1,7 +1,7 @@
 import random
 import time
 from datetime import datetime
-from database import get_products, save_order
+from database import get_products, save_order, get_order_history, search_order, get_order_items, delete_order, update_order_customer, update_order_items
 
 
 def print_header():
@@ -234,7 +234,7 @@ def print_receipt(
     print("=" * 50)
 
 
-def main():
+def create_order():
     print_header()
 
     customer_name = input("\nEnter customer name: ")
@@ -270,8 +270,171 @@ def main():
         payment_method,
         payment_status,
         reference,
-        order_date
+        order_date,
+        orders
         )
+
+def find_order():
+    print("\n--- SEARCH ORDER ---")
+
+    order_id = int(input("Enter Order ID: "))
+
+    order = search_order(order_id)
+
+    if order:
+        print("\n--- ORDER DETAILS ---")
+
+        order_id, customer_name, total, payment_method, payment_status, reference, order_date = order
+
+        print(f"Order ID: {order_id}")
+        print(f"Customer: {customer_name.title()}")
+        print(f"Total: ₦{total:,}")
+        print(f"Payment: {payment_method}")
+        print(f"Status: {payment_status}")
+        print(f"Reference: {reference}")
+        print(f"Date: {order_date}")
+        items = get_order_items(order_id)
+
+        print("\n--- ITEMS PURCHASED ---")
+
+        for product_name, quantity, unit_price in items:
+            item_total = quantity * unit_price
+            print(f"{product_name.title()} x {quantity} = ₦{item_total:,}")
+
+    else:
+        print("Order not found.")
+
+def remove_order():
+    print("\n--- DELETE ORDER ---")
+
+    try:
+        order_id = int(input("Enter Order ID to delete: "))
+
+        order = search_order(order_id)
+
+        if order:
+            confirm = input("Are you sure you want to delete this order? (yes/no): ")
+
+            if confirm.lower() == "yes":
+                delete_order(order_id)
+                print("Order deleted successfully!")
+            else:
+                print("Order deletion cancelled.")
+
+        else:
+            print("Order not found.")
+
+    except ValueError:
+        print("Please enter a valid Order ID.")
+
+def edit_order():
+    print("\n--- EDIT ORDER ---")
+
+    try:
+        order_id = int(input("Enter Order ID: "))
+
+        order = search_order(order_id)
+
+        if order:
+            print(f"\nCurrent customer: {order[1]}")
+            print(f"Current total: ₦{order[2]:,}")
+
+            print("\n1. Edit customer name")
+            print("2. Edit products and quantities")
+
+            choice = input("Choose what to edit: ")
+
+            if choice == "1":
+                new_name = input("Enter new customer name: ")
+
+                if new_name.strip():
+                    update_order_customer(order_id, new_name)
+                    print("Customer name updated successfully!")
+                else:
+                    print("Customer name cannot be empty.")
+
+            elif choice == "2":
+                orders = build_order()
+
+                if orders:
+                    total = calculate_total(orders)
+
+                    update_order_items(order_id, total, orders)
+
+                    print("\nOrder updated successfully!")
+                    print(f"New total: ₦{total:,}")
+
+                else:
+                    print("No products selected.")
+
+            else:
+                print("Invalid choice.")
+
+        else:
+            print("Order not found.")
+
+    except ValueError:
+        print("Please enter a valid Order ID.")
+def main():
+    print("\n--- JULIET'S SWEET TREATS ---")
+    print("1. New Order")
+    print("2. View Order History")
+    print("3. Search Order")
+    print("4. Delete Order")
+    print("5. Edit Order")
+    print("6. Exit")
+
+    choice = input("\nChoose an option: ")
+
+    if choice == "1":
+        create_order()
+
+    elif choice == "2":
+        orders = get_order_history()
+
+        if not orders:
+            print("No orders found.")
+        else:
+            print("\n---ORDER HISTORY ---")
+
+
+            previous_order_id = None
+            for order in orders:
+                
+                order_id, customer_name, total, payment_method, payment_status, reference, order_date, product_name, quantity, unit_price = order
+                if order_id != previous_order_id:
+                    previous_order_id = order_id
+                    print("\n------------------------------")
+                    print(f"Order ID: {order_id}")
+                    print(f"Customer: {customer_name.title()}")
+                    print(f"Total: ₦{total:,}")
+                    print(f"Payment: {payment_method}")
+                    print(f"Status: {payment_status}")
+                    print(f"Date: {order_date}")
+                    print("\nItems:")
+                if product_name:
+                    item_total = quantity * unit_price
+                    print(f"  {product_name.title()} x {quantity} = ₦{item_total:,}")
+                else:
+                    print("  No product details available for this order.")
+    elif choice == "3":
+        find_order()
+
+    elif choice == "4":
+        remove_order()
+
+    elif choice == "5":
+        edit_order()
+    
+    elif choice == "6":
+        print("Thank you for using Juliet's Sweet Treats!")
+        return      
+
+    else:
+        print("Invalid choice. Please try again.") 
+
+
+
 
 if __name__ == "__main__":
     main()

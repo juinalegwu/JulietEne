@@ -1,8 +1,10 @@
 import sqlite3
 
-connection = sqlite3.connect("bakery.db")
 
+# Connect to database
+connection = sqlite3.connect("bakery.db")
 cursor = connection.cursor()
+
 
 # Customers table
 cursor.execute("""
@@ -14,9 +16,7 @@ CREATE TABLE IF NOT EXISTS customers (
 """)
 
 
-
-
-# Create products table
+# Products table
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS products (
     price INTEGER NOT NULL
 )
 """)
+
+
 # Orders table
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS orders (
@@ -36,6 +38,30 @@ CREATE TABLE IF NOT EXISTS orders (
     order_date TEXT NOT NULL
 )
 """)
+
+# Add amount_paid column if it doesn't exist
+cursor.execute("PRAGMA table_info(orders)")
+columns = [column[1] for column in cursor.fetchall()]
+
+if "amount_paid" not in columns:
+    cursor.execute("""
+        ALTER TABLE orders
+        ADD COLUMN amount_paid INTEGER NOT NULL DEFAULT 0
+    """)
+
+
+# Order items table
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS order_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id INTEGER NOT NULL,
+    product_name TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    unit_price INTEGER NOT NULL
+)
+""")
+
+
 # Add bakery products
 products = [
     ("vanilla cake", 7000),
@@ -70,7 +96,10 @@ def get_products():
     connection.close()
 
     return products
-def save_order(customer_name, total, payment_method, payment_status, reference, order_date):
+
+
+# Save a new order
+def save_order(customer_name, total, payment_method, payment_status, reference, order_date, orders):
     connection = sqlite3.connect("bakery.db")
     cursor = connection.cursor()
 
@@ -81,17 +110,161 @@ def save_order(customer_name, total, payment_method, payment_status, reference, 
         payment_method,
         payment_status,
         reference,
-        order_date
+        order_date,
+        amount_paid
+        
     )
-    VALUES (?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (
         customer_name,
         total,
         payment_method,
         payment_status,
         reference,
-        order_date
+        order_date,
+        total if payment_status == "PAID" else 0
     ))
+
+    order_id = cursor.lastrowid
+
+    for item, price, quantity in orders:
+        cursor.execute("""
+        INSERT INTO order_items (
+            order_id,
+            product_name,
+            quantity,
+            unit_price
+        )
+        VALUES (?, ?, ?, ?)
+        """, (order_id, item, quantity, price))
+
+    connection.commit()
+    connection.close()
+
+
+# Get order history
+def get_order_history():
+    connection = sqlite3.connect("bakery.db")
+    cursor = connection.cursor()
+
+    cursor.execute("""
+    SELECT
+        orders.id,
+        orders.customer_name,
+        orders.total,
+        orders.payment_method,
+        orders.payment_status,
+        orders.reference,
+        orders.order_date,
+        order_items.product_name,
+        order_items.quantity,
+        order_items.unit_price
+    FROM orders
+    LEFT JOIN order_items
+    ON orders.id = order_items.order_id
+    ORDER BY orders.id DESC, order_items.id ASC
+    """)
+
+    orders = cursor.fetchall()
+
+    connection.close()
+
+    return orders
+
+
+# Search for one order
+def search_order(order_id):
+    connection = sqlite3.connect("bakery.db")
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT *
+        FROM orders
+        WHERE id = ?
+    """, (order_id,))
+
+    order = cursor.fetchone()
+
+    connection.close()
+
+    return order
+
+
+# Get items belonging to one order
+def get_order_items(order_id):
+    connection = sqlite3.connect("bakery.db")
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT product_name, quantity, unit_price
+        FROM order_items
+        WHERE order_id = ?
+    """, (order_id,))
+
+    items = cursor.fetchall()
+
+    connection.close()
+
+    return items
+
+# Delete an order
+def delete_order(order_id):
+    connection = sqlite3.connect("bakery.db")
+    cursor = connection.cursor()
+
+    cursor.execute(
+        "DELETE FROM order_items WHERE order_id = ?",
+        (order_id,)
+    )
+
+    cursor.execute(
+        "DELETE FROM orders WHERE id = ?",
+        (order_id,)
+    )
+
+    connection.commit()
+    connection.close()
+
+# Update customer name on an order
+def update_order_customer(order_id, new_name):
+    connection = sqlite3.connect("bakery.db")
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        UPDATE orders
+        SET customer_name = ?
+        WHERE id = ?
+    """, (new_name, order_id))
+
+    connection.commit()
+    connection.close()
+
+# Update products and quantities in an order
+def update_order_items(order_id, total, orders):
+    connection = sqlite3.connect("bakery.db")
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        UPDATE orders
+        SET total = ?, payment_status = ?
+        WHERE id = ?
+    """, (total, "PAYMENT REVIEW", order_id))
+
+    cursor.execute("""
+        DELETE FROM order_items
+        WHERE order_id = ?
+    """, (order_id,))
+
+    for item, price, quantity in orders:
+        cursor.execute("""
+            INSERT INTO order_items (
+                order_id,
+                product_name,
+                quantity,
+                unit_price
+            )
+            VALUES (?, ?, ?, ?)
+        """, (order_id, item, quantity, price))
 
     connection.commit()
     connection.close()
