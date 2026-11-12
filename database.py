@@ -99,7 +99,7 @@ def get_products():
 
 
 # Save a new order
-def save_order(customer_name, total, payment_method, payment_status, reference, order_date, orders):
+def save_order(customer_name, total, payment_method, payment_status, reference, order_date, orders, amount_paid=0):
     connection = sqlite3.connect("bakery.db")
     cursor = connection.cursor()
 
@@ -112,7 +112,6 @@ def save_order(customer_name, total, payment_method, payment_status, reference, 
         reference,
         order_date,
         amount_paid
-        
     )
     VALUES (?, ?, ?, ?, ?, ?, ?)
     """, (
@@ -122,7 +121,7 @@ def save_order(customer_name, total, payment_method, payment_status, reference, 
         payment_status,
         reference,
         order_date,
-        total if payment_status == "PAID" else 0
+        amount_paid
     ))
 
     order_id = cursor.lastrowid
@@ -140,7 +139,6 @@ def save_order(customer_name, total, payment_method, payment_status, reference, 
 
     connection.commit()
     connection.close()
-
 
 # Get order history
 def get_order_history():

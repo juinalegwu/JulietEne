@@ -1,7 +1,17 @@
 import random
 import time
 from datetime import datetime
-from database import get_products, save_order, get_order_history, search_order, get_order_items, delete_order, update_order_customer, update_order_items
+
+from database import (
+    get_products,
+    save_order,
+    get_order_history,
+    search_order,
+    get_order_items,
+    delete_order,
+    update_order_customer,
+    update_order_items
+)
 
 
 def print_header():
@@ -91,33 +101,99 @@ def print_cart(orders):
     print(f"TOTAL: ₦{total:,}")
 
 
-def pay_with_cash(total):
-    print("\n--- CASH PAYMENT ---")
+# Determine payment status
+def get_payment_status(total, amount_paid):
+
+    if amount_paid <= 0:
+        return "UNPAID"
+
+    elif amount_paid < total:
+        return "PARTIALLY PAID"
+
+    else:
+        return "PAID"
+
+
+# Ask how much the customer is paying
+def ask_payment_amount(total):
 
     while True:
         try:
-            amount = int(input(f"Enter cash amount (₦{total:,}): "))
+            amount = int(input("\nEnter amount paid (₦): "))
 
-            if amount < total:
-                print("Insufficient cash. Please enter enough money.")
-                continue
+            if amount < 0:
+                print("Amount cannot be negative.")
 
-            change = amount - total
+            elif amount > total:
+                print("Amount cannot be greater than the order total.")
 
-            print(f"Payment received: ₦{amount:,}")
-            print(f"Change: ₦{change:,}")
-
-            return "Cash", "PAID", None, change
+            else:
+                return amount
 
         except ValueError:
             print("Please enter a valid amount.")
 
 
+# Cash payment
+def pay_with_cash(total):
+    print("\n--- CASH PAYMENT ---")
+
+    while True:
+        try:
+            amount = int(input("Enter amount received (₦): "))
+
+            if amount < 0:
+                print("Amount cannot be negative.")
+                continue
+
+            amount_paid = min(amount, total)
+            change = max(amount - total, 0)
+
+            payment_status = get_payment_status(
+                total,
+                amount_paid
+            )
+
+            print(f"\nAmount received: ₦{amount:,}")
+            print(f"Amount paid: ₦{amount_paid:,}")
+            print(f"Outstanding: ₦{total - amount_paid:,}")
+
+            return (
+                "Cash",
+                payment_status,
+                None,
+                change,
+                amount_paid
+            )
+
+        except ValueError:
+            print("Please enter a valid amount.")
+
+
+# Bank transfer
 def pay_with_transfer(total):
     print("\n--- BANK TRANSFER ---")
     print("This is a simulated transfer for demonstration only.")
 
-    print(f"\nAmount to transfer: ₦{total:,}")
+    print(f"Order total: ₦{total:,}")
+
+    amount_paid = ask_payment_amount(total)
+
+    payment_status = get_payment_status(
+        total,
+        amount_paid
+    )
+
+    if amount_paid == 0:
+        print("\nNo payment received.")
+
+        return (
+            "Bank Transfer",
+            payment_status,
+            None,
+            0,
+            amount_paid
+        )
 
     print("\n1. GTBank       *737#")
     print("2. Access Bank  *901#")
@@ -142,29 +218,65 @@ def pay_with_transfer(total):
 
     reference = f"TRF{random.randint(100000, 999999)}"
 
-    print("Transfer successful!")
+    print("Simulated transfer successful!")
 
-    return "Bank Transfer", "PAID", reference, 0
+    return (
+        "Bank Transfer",
+        payment_status,
+        reference,
+        0,
+        amount_paid
+    )
 
 
+# Card payment
 def pay_with_card(total):
     print("\n--- CARD PAYMENT ---")
+    print("This is a simulated card payment.")
 
-    print(f"Amount: ₦{total:,}")
+    print(f"Order total: ₦{total:,}")
 
-    input("Enter card number: ")
-    input("Enter PIN: ")
+    amount_paid = ask_payment_amount(total)
+
+    payment_status = get_payment_status(
+        total,
+        amount_paid
+    )
+
+    if amount_paid == 0:
+        print("\nNo payment received.")
+
+        return (
+            "Card",
+            payment_status,
+            None,
+            0,
+            amount_paid
+        )
+
+    print("\nEnter test card details only.")
+    print("Do not use your real card number or PIN.")
+
+    input("Enter test card number: ")
+    input("Enter test PIN: ")
 
     print("\nProcessing card payment...")
     time.sleep(2)
 
     reference = f"CARD{random.randint(100000, 999999)}"
 
-    print("Card payment successful!")
+    print("Simulated card payment successful!")
 
-    return "Card", "PAID", reference, 0
+    return (
+        "Card",
+        payment_status,
+        reference,
+        0,
+        amount_paid
+    )
 
 
+# Choose payment method
 def choose_payment_method(total):
     print("\n--- PAYMENT METHOD ---")
     print("1. Cash")
@@ -191,6 +303,7 @@ def choose_payment_method(total):
             print("Please enter a valid number.")
 
 
+# Print receipt
 def print_receipt(
     customer_name,
     orders,
@@ -198,7 +311,8 @@ def print_receipt(
     payment_method,
     payment_status,
     reference,
-    change
+    change,
+    amount_paid
 ):
     print("\n" + "=" * 50)
     print("             RECEIPT")
@@ -212,13 +326,18 @@ def print_receipt(
 
     for item, price, quantity in orders:
         item_total = price * quantity
+
         print(
             f"{item.title()} x {quantity} "
             f"@ ₦{price:,} = ₦{item_total:,}"
         )
 
+    outstanding = max(total - amount_paid, 0)
+
     print("-" * 50)
     print(f"TOTAL: ₦{total:,}")
+    print(f"Amount Paid: ₦{amount_paid:,}")
+    print(f"Outstanding: ₦{outstanding:,}")
     print(f"Payment: {payment_method}")
     print(f"Status: {payment_status}")
 
@@ -234,6 +353,7 @@ def print_receipt(
     print("=" * 50)
 
 
+# Create a new order
 def create_order():
     print_header()
 
@@ -249,9 +369,13 @@ def create_order():
 
     total = calculate_total(orders)
 
-    payment_method, payment_status, reference, change = choose_payment_method(
-        total
-    )
+    (
+        payment_method,
+        payment_status,
+        reference,
+        change,
+        amount_paid
+    ) = choose_payment_method(total)
 
     print_receipt(
         customer_name,
@@ -260,10 +384,12 @@ def create_order():
         payment_method,
         payment_status,
         reference,
-        change
+        change,
+        amount_paid
     )
 
     order_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
     save_order(
         customer_name,
         total,
@@ -271,39 +397,68 @@ def create_order():
         payment_status,
         reference,
         order_date,
-        orders
-        )
+        orders,
+        amount_paid
+    )
 
+    print("\nOrder saved successfully!")
+
+
+# Search for an order
 def find_order():
     print("\n--- SEARCH ORDER ---")
 
-    order_id = int(input("Enter Order ID: "))
+    try:
+        order_id = int(input("Enter Order ID: "))
 
-    order = search_order(order_id)
+        order = search_order(order_id)
 
-    if order:
-        print("\n--- ORDER DETAILS ---")
+        if order:
+            print("\n--- ORDER DETAILS ---")
 
-        order_id, customer_name, total, payment_method, payment_status, reference, order_date = order
+            (
+                order_id,
+                customer_name,
+                total,
+                payment_method,
+                payment_status,
+                reference,
+                order_date,
+                amount_paid
+            ) = order
 
-        print(f"Order ID: {order_id}")
-        print(f"Customer: {customer_name.title()}")
-        print(f"Total: ₦{total:,}")
-        print(f"Payment: {payment_method}")
-        print(f"Status: {payment_status}")
-        print(f"Reference: {reference}")
-        print(f"Date: {order_date}")
-        items = get_order_items(order_id)
+            outstanding = max(total - amount_paid, 0)
 
-        print("\n--- ITEMS PURCHASED ---")
+            print(f"Order ID: {order_id}")
+            print(f"Customer: {customer_name.title()}")
+            print(f"Total: ₦{total:,}")
+            print(f"Amount Paid: ₦{amount_paid:,}")
+            print(f"Outstanding: ₦{outstanding:,}")
+            print(f"Payment: {payment_method}")
+            print(f"Status: {payment_status}")
+            print(f"Reference: {reference}")
+            print(f"Date: {order_date}")
 
-        for product_name, quantity, unit_price in items:
-            item_total = quantity * unit_price
-            print(f"{product_name.title()} x {quantity} = ₦{item_total:,}")
+            items = get_order_items(order_id)
 
-    else:
-        print("Order not found.")
+            print("\n--- ITEMS PURCHASED ---")
 
+            for product_name, quantity, unit_price in items:
+                item_total = quantity * unit_price
+
+                print(
+                    f"{product_name.title()} x {quantity} "
+                    f"= ₦{item_total:,}"
+                )
+
+        else:
+            print("Order not found.")
+
+    except ValueError:
+        print("Please enter a valid Order ID.")
+
+
+# Delete an order
 def remove_order():
     print("\n--- DELETE ORDER ---")
 
@@ -313,11 +468,14 @@ def remove_order():
         order = search_order(order_id)
 
         if order:
-            confirm = input("Are you sure you want to delete this order? (yes/no): ")
+            confirm = input(
+                "Are you sure you want to delete this order? (yes/no): "
+            )
 
             if confirm.lower() == "yes":
                 delete_order(order_id)
                 print("Order deleted successfully!")
+
             else:
                 print("Order deletion cancelled.")
 
@@ -327,6 +485,8 @@ def remove_order():
     except ValueError:
         print("Please enter a valid Order ID.")
 
+
+# Edit an order
 def edit_order():
     print("\n--- EDIT ORDER ---")
 
@@ -349,7 +509,9 @@ def edit_order():
 
                 if new_name.strip():
                     update_order_customer(order_id, new_name)
+
                     print("Customer name updated successfully!")
+
                 else:
                     print("Customer name cannot be empty.")
 
@@ -363,6 +525,8 @@ def edit_order():
 
                     print("\nOrder updated successfully!")
                     print(f"New total: ₦{total:,}")
+                    print("Payment status: PAYMENT REVIEW")
+                    print("Please reconcile the previous payment.")
 
                 else:
                     print("No products selected.")
@@ -377,6 +541,7 @@ def edit_order():
         print("Please enter a valid Order ID.")
 
 
+# Main menu
 def main():
     print("\n--- JULIET'S SWEET TREATS ---")
     print("1. New Order")
@@ -396,14 +561,27 @@ def main():
 
         if not orders:
             print("No orders found.")
+
         else:
-            print("\n---ORDER HISTORY ---")
+            print("\n--- ORDER HISTORY ---")
 
             previous_order_id = None
 
             for order in orders:
 
-                order_id, customer_name, total, amount_paid, payment_method, payment_status, reference, order_date, product_name, quantity, unit_price = order
+                (
+                    order_id,
+                    customer_name,
+                    total,
+                    amount_paid,
+                    payment_method,
+                    payment_status,
+                    reference,
+                    order_date,
+                    product_name,
+                    quantity,
+                    unit_price
+                ) = order
 
                 if order_id != previous_order_id:
                     previous_order_id = order_id
@@ -413,7 +591,7 @@ def main():
                     print(f"Customer: {customer_name.title()}")
                     print(f"Total: ₦{total:,}")
 
-                    outstanding = total - amount_paid
+                    outstanding = max(total - amount_paid, 0)
 
                     print(f"Amount Paid: ₦{amount_paid:,}")
                     print(f"Outstanding: ₦{outstanding:,}")
@@ -424,9 +602,15 @@ def main():
 
                 if product_name:
                     item_total = quantity * unit_price
-                    print(f"  {product_name.title()} x {quantity} = ₦{item_total:,}")
+
+                    print(
+                        f"  {product_name.title()} x {quantity} "
+                        f"= ₦{item_total:,}"
+                    )
+
                 else:
                     print("  No product details available for this order.")
+
     elif choice == "3":
         find_order()
 
@@ -435,15 +619,13 @@ def main():
 
     elif choice == "5":
         edit_order()
-    
+
     elif choice == "6":
         print("Thank you for using Juliet's Sweet Treats!")
-        return      
+        return
 
     else:
-        print("Invalid choice. Please try again.") 
-
-
+        print("Invalid choice. Please try again.")
 
 
 if __name__ == "__main__":
