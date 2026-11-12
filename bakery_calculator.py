@@ -375,6 +375,8 @@ def edit_order():
 
     except ValueError:
         print("Please enter a valid Order ID.")
+
+
 def main():
     print("\n--- JULIET'S SWEET TREATS ---")
     print("1. New Order")
@@ -397,21 +399,29 @@ def main():
         else:
             print("\n---ORDER HISTORY ---")
 
-
             previous_order_id = None
+
             for order in orders:
-                
-                order_id, customer_name, total, payment_method, payment_status, reference, order_date, product_name, quantity, unit_price = order
+
+                order_id, customer_name, total, amount_paid, payment_method, payment_status, reference, order_date, product_name, quantity, unit_price = order
+
                 if order_id != previous_order_id:
                     previous_order_id = order_id
+
                     print("\n------------------------------")
                     print(f"Order ID: {order_id}")
                     print(f"Customer: {customer_name.title()}")
                     print(f"Total: ₦{total:,}")
+
+                    outstanding = total - amount_paid
+
+                    print(f"Amount Paid: ₦{amount_paid:,}")
+                    print(f"Outstanding: ₦{outstanding:,}")
                     print(f"Payment: {payment_method}")
                     print(f"Status: {payment_status}")
                     print(f"Date: {order_date}")
                     print("\nItems:")
+
                 if product_name:
                     item_total = quantity * unit_price
                     print(f"  {product_name.title()} x {quantity} = ₦{item_total:,}")

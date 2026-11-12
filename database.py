@@ -152,6 +152,7 @@ def get_order_history():
         orders.id,
         orders.customer_name,
         orders.total,
+        orders.amount_paid,
         orders.payment_method,
         orders.payment_status,
         orders.reference,
