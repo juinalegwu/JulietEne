@@ -373,8 +373,8 @@ def update_order_payment(order_id, amount_paid):
 
 
 # Add an additional payment and update the order
-def add_payment(order_id, amount, payment_method, reference, payment_date):
-    connection = sqlite3.connect("bakery.db")
+def add_payment(order_id, amount, payment_method, reference, payment_date, db_path="bakery.db"):
+    connection = sqlite3.connect(db_path)
     cursor = connection.cursor()
 
     cursor.execute("""
