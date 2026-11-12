@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS customers (
 )
 """)
 
-# Remove the old products table
-cursor.execute("DROP TABLE IF EXISTS products")
+
+
 
 # Create products table
 cursor.execute("""
