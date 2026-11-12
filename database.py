@@ -224,6 +224,11 @@ def delete_order(order_id):
     cursor = connection.cursor()
 
     cursor.execute(
+        "DELETE FROM payments WHERE order_id = ?",
+        (order_id,)
+    )
+
+    cursor.execute(
         "DELETE FROM order_items WHERE order_id = ?",
         (order_id,)
     )
