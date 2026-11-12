@@ -10,7 +10,9 @@ from database import (
     get_order_items,
     delete_order,
     update_order_customer,
-    update_order_items
+    update_order_items,
+    add_payment,
+    get_order_payments
 )
 
 
@@ -521,21 +523,140 @@ def edit_order():
                 if orders:
                     total = calculate_total(orders)
 
-                    update_order_items(order_id, total, orders)
+                updated = update_order_items(order_id, total, orders)
+                if updated:
+                    updated_order = search_order(order_id)
 
                     print("\nOrder updated successfully!")
                     print(f"New total: ₦{total:,}")
-                    print("Payment status: PAYMENT REVIEW")
-                    print("Please reconcile the previous payment.")
-
+                    print(f"Amount paid: ₦{updated_order[7]:,}")
+                    print(f"Payment status: {updated_order[4]}")
                 else:
-                    print("No products selected.")
+                    print("\nOrder cannot be updated.")
+                    print("The new total cannot be less than the amount already paid.")
 
             else:
                 print("Invalid choice.")
 
         else:
             print("Order not found.")
+
+    except ValueError:
+        print("Please enter a valid Order ID.")
+
+def record_additional_payment():
+    print("\n--- RECORD ADDITIONAL PAYMENT ---")
+
+    try:
+        order_id = int(input("Enter Order ID: "))
+
+        order = search_order(order_id)
+
+        if not order:
+            print("Order not found.")
+            return
+
+        total = order[2]
+        amount_paid = order[7]
+
+        outstanding = total - amount_paid
+
+        print(f"\nOrder Total: ₦{total:,}")
+        print(f"Amount Paid: ₦{amount_paid:,}")
+        print(f"Outstanding: ₦{outstanding:,}")
+
+        if outstanding <= 0:
+            print("\nThis order is already fully paid.")
+            return
+
+        amount = int(input("\nEnter payment amount: ₦"))
+
+        if amount <= 0 or amount > outstanding:
+            print("Invalid payment amount.")
+            return
+
+        print("\n1. Cash")
+        print("2. Bank Transfer")
+        print("3. Card")
+
+        method_choice = input("Choose payment method: ")
+
+        methods = {
+            "1": "Cash",
+            "2": "Bank Transfer",
+            "3": "Card"
+        }
+
+        if method_choice not in methods:
+            print("Invalid payment method.")
+            return
+
+        payment_method = methods[method_choice]
+
+        reference = None
+
+        if payment_method != "Cash":
+            reference = f"PAY{random.randint(100000, 999999)}"
+
+        payment_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        success = add_payment(
+            order_id,
+            amount,
+            payment_method,
+            reference,
+            payment_date
+        )
+
+        if success:
+            new_balance = outstanding - amount
+
+            print("\nPayment recorded successfully!")
+            print(f"Amount Received: ₦{amount:,}")
+            print(f"Remaining Balance: ₦{new_balance:,}")
+
+            if new_balance == 0:
+                print("Payment Status: PAID")
+            else:
+                print("Payment Status: PARTIALLY PAID")
+
+        else:
+            print("Unable to record payment.")
+
+    except ValueError:
+        print("Please enter a valid number.")
+
+def view_payment_history():
+    print("\n--- PAYMENT HISTORY ---")
+
+    try:
+        order_id = int(input("Enter Order ID: "))
+
+        order = search_order(order_id)
+
+        if not order:
+            print("Order not found.")
+            return
+
+        payments = get_order_payments(order_id)
+
+        print(f"\nCustomer: {order[1].title()}")
+        print(f"Order Total: ₦{order[2]:,}")
+        print(f"Total Paid: ₦{order[7]:,}")
+        print(f"Outstanding: ₦{order[2] - order[7]:,}")
+
+        if not payments:
+            print("\nNo additional payments recorded.")
+            return
+
+        print("\nComplete Payments History:")
+
+        for amount, method, reference, payment_date in payments:
+            print("-" * 35)
+            print(f"Amount: ₦{amount:,}")
+            print(f"Method: {method}")
+            print(f"Reference: {reference or 'N/A'}")
+            print(f"Date: {payment_date}")
 
     except ValueError:
         print("Please enter a valid Order ID.")
@@ -550,6 +671,8 @@ def main():
     print("4. Delete Order")
     print("5. Edit Order")
     print("6. Exit")
+    print("7. Record Additional Payment")
+    print("8. View Payment History")
 
     choice = input("\nChoose an option: ")
 
@@ -623,6 +746,12 @@ def main():
     elif choice == "6":
         print("Thank you for using Juliet's Sweet Treats!")
         return
+
+    elif choice == "7":
+        record_additional_payment()
+
+    elif choice == "8":
+        view_payment_history()
 
     else:
         print("Invalid choice. Please try again.")

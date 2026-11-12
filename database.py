@@ -39,6 +39,18 @@ CREATE TABLE IF NOT EXISTS orders (
 )
 """)
 
+# Payments table
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id INTEGER NOT NULL,
+    amount INTEGER NOT NULL,
+    payment_method TEXT NOT NULL,
+    reference TEXT,
+    payment_date TEXT NOT NULL
+)
+""")
+
 # Add amount_paid column if it doesn't exist
 cursor.execute("PRAGMA table_info(orders)")
 columns = [column[1] for column in cursor.fetchall()]
@@ -238,17 +250,46 @@ def update_order_customer(order_id, new_name):
     connection.commit()
     connection.close()
 
-# Update products and quantities in an order
 def update_order_items(order_id, total, orders):
     connection = sqlite3.connect("bakery.db")
     cursor = connection.cursor()
 
+    # Get the amount already paid
+    cursor.execute("""
+        SELECT amount_paid
+        FROM orders
+        WHERE id = ?
+    """, (order_id,))
+
+    order = cursor.fetchone()
+
+    if order is None:
+        connection.close()
+        return False
+
+    amount_paid = order[0]
+    if total < amount_paid:
+        connection.close()
+        return False
+
+    # Calculate the correct payment status
+    if amount_paid == 0:
+        status = "UNPAID"
+
+    elif amount_paid < total:
+        status = "PARTIALLY PAID"
+
+    else:
+        status = "PAID"
+
+    # Update order total and payment status
     cursor.execute("""
         UPDATE orders
         SET total = ?, payment_status = ?
         WHERE id = ?
-    """, (total, "PAYMENT REVIEW", order_id))
+    """, (total, status, order_id))
 
+    # Replace old order items
     cursor.execute("""
         DELETE FROM order_items
         WHERE order_id = ?
@@ -267,3 +308,163 @@ def update_order_items(order_id, total, orders):
 
     connection.commit()
     connection.close()
+
+    return True
+
+# Record an additional payment
+def record_payment(order_id, amount, payment_method, reference, payment_date):
+    connection = sqlite3.connect("bakery.db")
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        INSERT INTO payments (
+            order_id,
+            amount,
+            payment_method,
+            reference,
+            payment_date
+        )
+        VALUES (?, ?, ?, ?, ?)
+    """, (order_id, amount, payment_method, reference, payment_date))
+
+    connection.commit()
+    connection.close()
+
+# Update order payment details
+def update_order_payment(order_id, amount_paid):
+    connection = sqlite3.connect("bakery.db")
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT total
+        FROM orders
+        WHERE id = ?
+    """, (order_id,))
+
+    order = cursor.fetchone()
+
+    if order is None:
+        connection.close()
+        return False
+
+    total = order[0]
+
+    if amount_paid < 0 or amount_paid > total:
+        connection.close()
+        return False
+
+    if amount_paid == 0:
+        status = "UNPAID"
+    elif amount_paid < total:
+        status = "PARTIALLY PAID"
+    else:
+        status = "PAID"
+
+    cursor.execute("""
+        UPDATE orders
+        SET amount_paid = ?, payment_status = ?
+        WHERE id = ?
+    """, (amount_paid, status, order_id))
+
+    connection.commit()
+    connection.close()
+
+    return True
+
+
+# Add an additional payment and update the order
+def add_payment(order_id, amount, payment_method, reference, payment_date):
+    connection = sqlite3.connect("bakery.db")
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT total, amount_paid
+        FROM orders
+        WHERE id = ?
+    """, (order_id,))
+
+    order = cursor.fetchone()
+
+    if order is None:
+        connection.close()
+        return False
+
+    total, current_paid = order
+    new_amount_paid = current_paid + amount
+
+    if amount <= 0 or new_amount_paid > total:
+        connection.close()
+        return False
+
+    if new_amount_paid == total:
+        status = "PAID"
+    else:
+        status = "PARTIALLY PAID"
+
+    cursor.execute("""
+        INSERT INTO payments (
+            order_id, amount, payment_method, reference, payment_date
+        )
+        VALUES (?, ?, ?, ?, ?)
+    """, (order_id, amount, payment_method, reference, payment_date))
+
+    cursor.execute("""
+        UPDATE orders
+        SET amount_paid = ?, payment_status = ?
+        WHERE id = ?
+    """, (new_amount_paid, status, order_id))
+
+    connection.commit()
+    connection.close()
+
+    return True
+
+# Get complete payment history for an order
+def get_order_payments(order_id):
+    connection = sqlite3.connect("bakery.db")
+    cursor = connection.cursor()
+
+    # Get original order payment details
+    cursor.execute("""
+        SELECT amount_paid, payment_method, reference, order_date
+        FROM orders
+        WHERE id = ?
+    """, (order_id,))
+
+    order = cursor.fetchone()
+
+    if order is None:
+        connection.close()
+        return []
+
+    total_paid, original_method, original_reference, order_date = order
+
+    # Get additional payments
+    cursor.execute("""
+        SELECT amount, payment_method, reference, payment_date
+        FROM payments
+        WHERE order_id = ?
+        ORDER BY id ASC
+    """, (order_id,))
+
+    additional_payments = cursor.fetchall()
+
+    # Calculate the original payment
+    additional_total = sum(payment[0] for payment in additional_payments)
+    original_amount = total_paid - additional_total
+
+    payments = []
+
+    if original_amount > 0:
+        payments.append((
+            original_amount,
+            original_method,
+            original_reference,
+            order_date
+        ))
+
+    payments.extend(additional_payments)
+
+    connection.close()
+
+    return payments
