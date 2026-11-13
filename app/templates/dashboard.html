@@ -1,31 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juliet's Sweet Treats</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
-</head>
+<section>
+    <p>
+        Total Orders<br>
+        <strong>{{ total_orders }}</strong>
+    </p>
 
-<body>
+    <p>
+        Total Customers<br>
+        <strong>{{ total_customers }}</strong>
+    </p>
 
-    <header>
-        <h1>Juliet's Sweet Treats</h1>
-        <p>Bakery Management Dashboard</p>
-    </header>
+    <p>
+        Total Products<br>
+        <strong>{{ total_products }}</strong>
+    </p>
 
-    <main>
-        <h2>Welcome to Your Bakery!</h2>
-        <p>Manage your orders, customers, products and payments in one place.</p>
+    <p>
+        Total Sales<br>
+        <strong>₦{{ "{:,.0f}".format(total_sales) }}</strong>
+    </p>
 
-        <section>
-            <h3>Dashboard</h3>
-            <p>Orders</p>
-            <p>Customers</p>
-            <p>Products</p>
-            <p>Payments</p>
-        </section>
-    </main>
+    <p>
+        Amount Paid<br>
+        <strong>₦{{ "{:,.0f}".format(amount_paid) }}</strong>
+    </p>
 
-</body>
-</html>
+    <p>
+        Outstanding Balance<br>
+        <strong>₦{{ "{:,.0f}".format(outstanding) }}</strong>
+    </p>
+</section>

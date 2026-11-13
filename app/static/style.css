@@ -3,11 +3,11 @@ body {
     background-color: #fff8f0;
     margin: 0;
     padding: 0;
-    color: #4a3025;
+    color: #421c5e;
 }
 
 header {
-    background-color: #8b4513;
+    background-color: #683188;
     color: white;
     padding: 25px;
     text-align: center;
@@ -31,4 +31,285 @@ section p {
     flex: 1;
     text-align: center;
     font-weight: bold;
+}
+/* Dashboard cards */
+
+section {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 30px;
+}
+
+section p {
+    background-color: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    text-align: center;
+    font-weight: bold;
+    color: #63138b;
+    font-size: 16px;
+}
+
+section strong {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 26px;
+    color: #4a2548;
+}
+
+/* Make cards fit smaller screens */
+
+@media (max-width: 768px) {
+    section {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    section {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Order History Table */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 25px;
+    background-color: white;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+th {
+    background-color: #59138b;
+    color: white;
+    padding: 15px;
+    text-align: left;
+}
+
+td {
+    padding: 14px;
+    border-bottom: 1px solid #eee0d5;
+}
+
+tr:hover {
+    background-color: #fff0df;
+}
+
+a {
+    color: #53138b;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}
+ 
+.error-message {
+    background-color: #ffe6e6;
+    color: #b30000;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+/* Edit Order Form */
+
+form[action*="/edit"] {
+    background-color: white;
+    max-width: 650px;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+form[action*="/edit"] label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+form[action*="/edit"] input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 18px;
+    border: 1px solid #d5c5df;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+form[action*="/edit"] button {
+    background-color: #683188;
+    color: white;
+    padding: 12px 22px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* Product quantity rows */
+
+form[action*="/edit"] > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    background-color: #faf7fc;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+}
+
+form[action*="/edit"] > div label {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+form[action*="/edit"] > div input {
+    width: 100px;
+    margin-bottom: 0;
+}
+
+/* Mobile-friendly Edit Order page */
+
+@media (max-width: 600px) {
+
+    main {
+        padding: 15px;
+    }
+
+    form[action*="/edit"] {
+        padding: 15px;
+    }
+
+    form[action*="/edit"] > div {
+        gap: 10px;
+        padding: 10px;
+    }
+
+    form[action*="/edit"] > div label {
+        font-size: 14px;
+    }
+
+    form[action*="/edit"] > div input {
+        width: 75px;
+    }
+
+    header {
+        padding: 15px;
+    }
+}
+
+/* New Order Form */
+
+form[action="/new-order"] {
+    background-color: white;
+    max-width: 650px;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+form[action="/new-order"] label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+form[action="/new-order"] input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 18px;
+    border: 1px solid #d5c5df;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+form[action="/new-order"] > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    background-color: #faf7fc;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+}
+
+form[action="/new-order"] > div label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 0;
+}
+
+form[action="/new-order"] > div input {
+    width: 100px;
+    margin-bottom: 0;
+}
+
+form[action="/new-order"] button {
+    background-color: #683188;
+    color: white;
+    padding: 12px 22px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+/* Print Receipt Styling */
+
+@media print {
+    body {
+        background: white;
+        color: black;
+        font-family: Arial, sans-serif;
+    }
+
+    header {
+        background: white;
+        color: #683188;
+        border-bottom: 2px solid #683188;
+    }
+
+    button,
+    a,
+    form {
+        display: none !important;
+    }
+
+    main {
+        padding: 20px;
+    }
+
+    h1, h2, h3 {
+        color: #683188;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        border: 1px solid #ccc;
+        padding: 10px;
+        text-align: left;
+    }
 }

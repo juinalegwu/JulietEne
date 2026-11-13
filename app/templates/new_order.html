@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Order - Juliet's Sweet Treats</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+
+<body>
+
+    <header>
+        <h1>Juliet's Sweet Treats</h1>
+        <p>Create a New Order</p>
+    </header>
+
+    <main>
+        <h2>New Bakery Order</h2>
+
+        <form action="/new-order" method="post">
+            <label for="customer_name">Customer Name:</label>
+            <input
+                type="text"
+                id="customer_name"
+                name="customer_name"
+                placeholder="Enter customer name"
+                required
+            >
+<label for="customer_phone">Customer Phone Number:</label>
+
+<input
+    type="tel"
+    id="customer_phone"
+    name="customer_phone"
+    placeholder="Enter customer phone number"
+>
+            <h3>Select Products</h3>
+
+{% for product in products %}
+
+    <div>
+        <label>
+            {{ product[1] }} - ₦{{ "{:,.0f}".format(product[2]) }}
+
+            <input
+                type="number"
+                name="quantity_{{ product[0] }}"
+                min="0"
+                value="0"
+                data-price="{{ product[2] }}"
+            >
+        </label>
+    </div>
+
+{% endfor %}
+<div class="order-total">
+    <h3>Order Total: ₦<span id="total">0</span></h3>
+</div>
+
+<br>
+
+<button type="submit">Create Order</button>
+        </form>
+    </main>
+
+<script>
+    const quantityInputs = document.querySelectorAll('input[name^="quantity_"]');
+    const totalDisplay = document.getElementById("total");
+
+    function calculateTotal() {
+        let total = 0;
+
+        quantityInputs.forEach(input => {
+            const quantity = Number(input.value) || 0;
+            const price = Number(input.dataset.price);
+
+            total += quantity * price;
+        });
+
+        totalDisplay.textContent = total.toLocaleString("en-NG");
+    }
+
+    quantityInputs.forEach(input => {
+        input.addEventListener("input", calculateTotal);
+    });
+
+    calculateTotal();
+</script>
+</body>
+</html>

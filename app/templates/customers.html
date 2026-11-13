@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customers - Juliet's Sweet Treats</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+
+<body>
+
+    <header>
+        <h1>Juliet's Sweet Treats</h1>
+        <p>Customer Management</p>
+    </header>
+
+    <main>
+        <h2>Our Customers</h2>
+
+        {% if customers %}
+
+            <table>
+                <tr>
+                    <th>Customer ID</th>
+                    <th>Name</th>
+                    <th>Phone Number</th>
+                </tr>
+
+                {% for customer in customers %}
+                <tr>
+                     <td>{{ customer[0] }}</td>
+                    <td>
+<a href="/customers/{{ customer[0] }}">{{ customer[1] }}</a>
+</td>
+                    <td>{{ customer[2] or "Not provided" }}</td>
+                </tr>
+                {% endfor %}
+
+            </table>
+
+        {% else %}
+
+            <p>No customers found.</p>
+
+        {% endif %}
+
+        <br>
+
+        <a href="/">
+            <button type="button">Back to Dashboard</button>
+        </a>
+
+    </main>
+
+</body>
+</html>

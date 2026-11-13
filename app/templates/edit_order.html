@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Order - Juliet's Sweet Treats</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<header>
+    <h1>Juliet's Sweet Treats</h1>
+    <h2>Edit Order #{{ order[0] }}</h2>
+</header>
+
+<main>
+
+    <form action="/orders/{{ order[0] }}/edit" method="post">
+
+        {% if error == "payment" %}
+    <p class="error-message">
+        The new total cannot be less than the amount already paid.
+    </p>
+{% endif %}
+        
+        <h2>Customer Information</h2>
+
+        <label>Customer Name:</label>
+        <input
+            type="text"
+            name="customer_name"
+            value="{{ order[1] }}"
+            required
+        >
+
+        <h2>Update Products</h2>
+
+        {% for product in products %}
+
+            {% set ns = namespace(quantity=0) %}
+
+{% for item in order_items %}
+    {% if item[0] == product[1] %}
+        {% set ns.quantity = item[1] %}
+    {% endif %}
+{% endfor %}
+
+            <div>
+                <label>
+                    {{ product[1] }} - ₦{{ "{:,}".format(product[2]) }}
+                </label>
+
+                <input
+                    type="number"
+                    name="quantity_{{ product[0] }}"
+                    min="0"
+                    value="{{ ns.quantity }}"
+                    data-price="{{ product[2] }}"
+                >
+            </div>
+
+        {% endfor %}
+
+        <br>
+
+       <div class="order-total">
+    <h3>Order Total: ₦<span id="total">0</span></h3>
+</div>
+
+<button type="submit">Update Order</button>
+
+    </form>
+
+    <br>
+
+    <a href="/orders/{{ order[0] }}">Back to Order Details</a>
+
+</main>
+
+<script>
+    const quantityInputs = document.querySelectorAll('input[name^="quantity_"]');
+    const totalDisplay = document.getElementById("total");
+
+    function calculateTotal() {
+        let total = 0;
+
+        quantityInputs.forEach(input => {
+            const quantity = Number(input.value) || 0;
+            const price = Number(input.dataset.price);
+
+            total += quantity * price;
+        });
+
+        totalDisplay.textContent = total.toLocaleString("en-NG");
+    }
+
+    quantityInputs.forEach(input => {
+        input.addEventListener("input", calculateTotal);
+    });
+
+    calculateTotal();
+</script>
+
+</body>
+</html>

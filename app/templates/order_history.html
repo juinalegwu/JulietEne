@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order History - Juliet's Sweet Treats</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Juliet's Sweet Treats</h1>
+        <p>Order History</p>
+    </header>
+
+    <main>
+        <h2>All Orders</h2>
+        <form action="/search-orders" method="get">
+
+    <input
+        type="text"
+        name="query"
+        placeholder="Enter Order ID or Customer Name"
+        value="{{ search_query or '' }}"
+        required
+    >
+
+    <button type="submit">Search</button>
+
+</form>
+
+<br>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Total</th>
+                    <th>Amount Paid</th>
+                    <th>Payment Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>
+                    <a href="/orders/{{ order[0] }}">{{ order[0] }}</a>
+                    </td>
+                    <td>{{ order[1] }}</td>
+                    <td>{{ order[8] }}</td>
+                    <td>{{ order[9] }}</td>
+                    <td>₦{{ "{:,.0f}".format(order[10]) }}</td>
+                    <td>₦{{ "{:,.0f}".format(order[2]) }}</td>
+                    <td>₦{{ "{:,.0f}".format(order[3]) }}</td>
+                    <td>{{ order[5] }}</td>
+                    <td>{{ order[7] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if search_query and not orders %}
+    <p>No matching orders found. Please try another search.</p>
+
+{% elif not orders %}
+    <p>No orders have been placed yet.</p>
+{% endif %}
+        <br>
+        <a href="/">Back to Dashboard</a>
+    </main>
+</body>
+</html>

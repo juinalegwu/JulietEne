@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Details - Juliet's Sweet Treats</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+
+<body>
+
+    <header>
+        <h1>Juliet's Sweet Treats</h1>
+        <p>Customer Details</p>
+    </header>
+
+    <main>
+
+        <h2>{{ customer[1] }}</h2>
+
+        <p><strong>Phone:</strong> {{ customer[2] or "Not provided" }}</p>
+
+        <h3>Customer Summary</h3>
+
+        <p>Total Orders: {{ total_orders }}</p>
+
+        <p>Total Paid: ₦{{ "{:,.0f}".format(total_spent) }}</p>
+
+        <p>Outstanding Balance: ₦{{ "{:,.0f}".format(outstanding) }}</p>
+
+        <h3>Order History</h3>
+
+        {% if orders %}
+
+        <table>
+            <tr>
+                <th>Order ID</th>
+                <th>Total</th>
+                <th>Amount Paid</th>
+                <th>Payment Status</th>
+                <th>Date</th>
+            </tr>
+
+            {% for order in orders %}
+            <tr>
+                <td>
+                    <a href="/orders/{{ order[0] }}">
+                        {{ order[0] }}
+                    </a>
+                </td>
+
+                <td>₦{{ "{:,.0f}".format(order[1]) }}</td>
+
+                <td>₦{{ "{:,.0f}".format(order[2]) }}</td>
+
+                <td>{{ order[3] }}</td>
+
+                <td>{{ order[4] }}</td>
+            </tr>
+            {% endfor %}
+
+        </table>
+
+        {% else %}
+
+        <p>This customer has not placed any orders yet.</p>
+
+        {% endif %}
+
+        <br>
+
+        <a href="/customers">
+            <button type="button">Back to Customers</button>
+        </a>
+
+    </main>
+
+</body>
+</html>

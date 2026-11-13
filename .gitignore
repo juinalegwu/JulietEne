@@ -1,2 +1,6 @@
 __pycache__/
 bakery.db
+__pycache__/
+bakery.db
+.venv/
+*.pyc
