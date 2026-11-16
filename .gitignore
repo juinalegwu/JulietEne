@@ -5,3 +5,4 @@ bakery.db
 .venv/
 *.pyc
 backups/
+reports/

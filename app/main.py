@@ -5,9 +5,10 @@ from fastapi import FastAPI, Request, Form
 
 from datetime import datetime
 from database import save_order, get_order_history, add_payment, delete_order, update_order_customer, update_order_items, backup_database
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from reports import generate_full_report
 
 
 app = FastAPI(title="Juliet's Sweet Treats")
@@ -88,6 +89,16 @@ def home(request: Request):
         context=stats
     )
 
+@app.get("/export-report")
+def export_report():
+
+    report_path = generate_full_report()
+
+    return FileResponse(
+        path=report_path,
+        filename=report_path.name,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 @app.get("/new-order")
 def new_order(request: Request):
