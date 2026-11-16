@@ -447,3 +447,81 @@ def customer_details(request: Request, customer_id: int):
             "outstanding": outstanding
         }
     )
+@app.get("/backups")
+async def view_backups(request: Request):
+
+    backup_folder = BASE_DIR / "backups"
+    backup_folder.mkdir(exist_ok=True)
+
+    backup_files = sorted(
+        backup_folder.glob("bakery_backup_*.db"),
+        key=lambda file: file.stat().st_mtime,
+        reverse=True
+    )
+
+    backups = [
+        {
+            "name": file.name,
+            "date": datetime.fromtimestamp(
+                file.stat().st_mtime
+            ).strftime("%Y-%m-%d %H:%M:%S")
+        }
+        for file in backup_files
+    ]
+
+    return templates.TemplateResponse(
+        request=request,
+        name="backups.html",
+        context={
+    "backups": backups,
+    "message": request.query_params.get("message")
+}
+    )
+@app.post("/restore")
+async def restore_backup(backup_name: str = Form(...)):
+
+    backup_folder = BASE_DIR / "backups"
+    backup_path = (backup_folder / backup_name).resolve()
+
+    if (
+        backup_path.parent != backup_folder.resolve()
+        or not backup_path.is_file()
+        or not backup_path.name.startswith("bakery_backup_")
+        or backup_path.suffix != ".db"
+    ):
+        return {"error": "Invalid backup file"}
+
+    source = sqlite3.connect(str(backup_path))
+
+    try:
+        result = source.execute("PRAGMA integrity_check").fetchone()
+
+        if not result or result[0] != "ok":
+            return {"error": "This backup is damaged"}
+
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        safety_file = backup_folder / f"before_restore_{timestamp}.db"
+
+        current = sqlite3.connect(str(DATABASE))
+        safety = sqlite3.connect(str(safety_file))
+
+        try:
+            current.backup(safety)
+        finally:
+            safety.close()
+            current.close()
+
+        destination = sqlite3.connect(str(DATABASE))
+
+        try:
+            source.backup(destination)
+        finally:
+            destination.close()
+
+    finally:
+        source.close()
+
+    return RedirectResponse(
+    url="/backups?message=Database+restored+successfully",
+    status_code=303
+)

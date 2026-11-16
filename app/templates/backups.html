@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Backups - Juliet's Sweet Treats</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body>
+
+    <header>
+        <h1>Juliet's Sweet Treats</h1>
+        <p>Database Backup Management</p>
+    </header>
+
+    <main>
+        <h2>Available Backups</h2>
+{% if message %}
+    <p class="success-message">{{ message }}</p>
+{% endif %}
+
+        {% if backups %}
+            <table>
+                <tr>
+                    <th>Backup File</th>
+                    <th>Date Created</th>
+                    <th>Action</th>
+                </tr>
+
+                {% for backup in backups %}
+                <tr>
+                    <td>{{ backup.name }}</td>
+                    <td>{{ backup.date }}</td>
+       
+             <td>
+                        <form action="/restore" method="POST"
+                              onsubmit="return confirm('Are you sure? Your current database will be replaced.')">
+
+                            <input type="hidden" name="backup_name"
+                                   value="{{ backup.name }}">
+
+                            <button type="submit">Restore</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+
+        {% else %}
+            <p>No backups available.</p>
+        {% endif %}
+
+        <br>
+
+        <a href="/">
+            <button type="button">Back to Dashboard</button>
+        </a>
+
+    </main>
+
+</body>
+</html>

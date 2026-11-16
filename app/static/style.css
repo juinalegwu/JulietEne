@@ -313,3 +313,12 @@ form[action="/new-order"] button {
         text-align: left;
     }
 }
+.success-message {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 15px 0;
+    font-weight: bold;
+    text-align: center;
+}
