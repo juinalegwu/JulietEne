@@ -116,10 +116,9 @@ async def create_order(
     request: Request,
     customer_name: str = Form(...),
     customer_phone: str = Form("")
+    
 ):
-
     form = await request.form()
-
     products = get_products()
 
     orders = []
@@ -138,10 +137,16 @@ async def create_order(
             total += price * quantity
 
     if not customer_name.strip() or not orders:
+            if not success:
         return RedirectResponse(
-            url="/new-order",
+            url=f"/orders/{order_id}?error=payment",
             status_code=303
         )
+
+    return RedirectResponse(
+        url=f"/orders/{order_id}",
+        status_code=303
+    )
 
     customer_name = customer_name.strip()
 
@@ -360,8 +365,8 @@ async def update_order_page(
 ):
     form_data = await request.form()
 
-    customer_name: str = Form(...),
-    customer_phone: str = Form("")
+    customer_name = form_data.get("customer_name")
+    customer_phone = form_data.get("customer_phone", "")
     products = get_products()
 
     updated_orders = []
