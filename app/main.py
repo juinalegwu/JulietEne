@@ -1,10 +1,10 @@
 import sqlite3
 from pathlib import Path
+from fastapi import FastAPI, Request, Form
 
 
 from datetime import datetime
-from database import save_order, get_order_history, add_payment, delete_order, update_order_customer, update_order_items
-from fastapi import FastAPI, Request, Form
+from database import save_order, get_order_history, add_payment, delete_order, update_order_customer, update_order_items, backup_database
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -18,6 +18,10 @@ templates = Jinja2Templates(directory="app/templates")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATABASE = BASE_DIR / "bakery.db"
+
+@app.on_event("startup")
+def create_startup_backup():
+    backup_database()
 
 
 def get_products():

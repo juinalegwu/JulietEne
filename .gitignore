@@ -4,3 +4,4 @@ __pycache__/
 bakery.db
 .venv/
 *.pyc
+backups/

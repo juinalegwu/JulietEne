@@ -1,6 +1,36 @@
 import sqlite3
+from datetime import datetime
+from pathlib import Path
 
+def backup_database():
+    backup_folder = Path("backups")
+    backup_folder.mkdir(exist_ok=True)
 
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    backup_file = backup_folder / f"bakery_backup_{timestamp}.db"
+
+    source = sqlite3.connect("bakery.db")
+    destination = sqlite3.connect(str(backup_file))
+
+    try:
+        source.backup(destination)
+    finally:
+        destination.close()
+        source.close()
+
+    print(f"Database backup created: {backup_file}")
+
+    # Keep only the 7 newest backups
+    backup_files = sorted(
+        backup_folder.glob("bakery_backup_*.db"),
+        key=lambda file: file.stat().st_mtime,
+        reverse=True
+    )
+
+    for old_backup in backup_files[7:]:
+        old_backup.unlink()
+        print(f"Old backup deleted: {old_backup}")
 # Connect to database
 connection = sqlite3.connect("bakery.db")
 cursor = connection.cursor()
