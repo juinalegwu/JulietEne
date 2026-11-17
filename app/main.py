@@ -137,17 +137,11 @@ async def create_order(
             total += price * quantity
 
     if not customer_name.strip() or not orders:
-            if not success:
         return RedirectResponse(
-            url=f"/orders/{order_id}?error=payment",
+            url="/new-order",
             status_code=303
         )
-
-    return RedirectResponse(
-        url=f"/orders/{order_id}",
-        status_code=303
-    )
-
+    
     customer_name = customer_name.strip()
 
     connection = sqlite3.connect(DATABASE)
@@ -250,7 +244,7 @@ def order_history(request: Request):
     )
 
 @app.get("/orders/{order_id}")
-def order_details(request: Request, order_id: int):
+def order_details(request: Request, order_id: int, error: str = None):
 
     connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
@@ -303,6 +297,12 @@ def record_order_payment(
         payment_date,
         db_path=str(DATABASE)
     )
+
+    if not success:
+        return RedirectResponse(
+            url=f"/orders/{order_id}?error=payment",
+            status_code=303
+        )
 
     return RedirectResponse(
         url=f"/orders/{order_id}",

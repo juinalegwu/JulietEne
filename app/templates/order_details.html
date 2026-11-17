@@ -16,6 +16,12 @@
     <main>
         <h2>Order #{{ order[0] }}</h2>
 
+        {% if error == "payment" %}
+    <p class="error-message">
+        Payment rejected! Please enter an amount greater than zero that does not exceed the outstanding balance.
+    </p>
+{% endif %}
+
         <h3>Customer Information</h3>
         <p><strong>Customer Name:</strong> {{ order[1] }}</p>
         <p><strong>Order Date:</strong> {{ order[6] }}</p>

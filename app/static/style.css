@@ -322,3 +322,12 @@ form[action="/new-order"] button {
     font-weight: bold;
     text-align: center;
 }
+.error-message {
+    background-color: #ffe6e6;
+    color: #b00020;
+    border: 1px solid #ffb3b3;
+    padding: 12px;
+    border-radius: 6px;
+    margin: 15px 0;
+    font-weight: bold;
+}
