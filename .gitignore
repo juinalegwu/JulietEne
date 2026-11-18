@@ -1,8 +1,20 @@
+# Python
 __pycache__/
-bakery.db
-__pycache__/
-bakery.db
-.venv/
 *.pyc
+
+# Virtual environment
+.venv/
+
+# Database
+*.db
+
+# Backups
 backups/
+
+# Generated reports
 reports/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
