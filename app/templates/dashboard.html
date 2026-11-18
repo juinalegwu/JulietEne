@@ -1,36 +1,36 @@
-<section>
-    <p>
-        Total Orders<br>
-        <strong>{{ total_orders }}</strong>
-    </p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Juliet's Sweet Treats</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body>
 
-    <p>
-        Total Customers<br>
-        <strong>{{ total_customers }}</strong>
-    </p>
+    <header>
+        <h1>Juliet's Sweet Treats</h1>
+        <p>Dashboard</p>
+    </header>
 
-    <p>
-        Total Products<br>
-        <strong>{{ total_products }}</strong>
-    </p>
+    {% include "nav.html" %}
 
-    <p>
-        Total Sales<br>
-        <strong>₦{{ "{:,.0f}".format(total_sales) }}</strong>
-    </p>
+    <main>
+        <section>
+            <p>Total Orders<br><strong>{{ total_orders }}</strong></p>
+            <p>Total Customers<br><strong>{{ total_customers }}</strong></p>
+            <p>Total Products<br><strong>{{ total_products }}</strong></p>
+            <p>Total Sales<br><strong>₦{{ "{:,.0f}".format(total_sales) }}</strong></p>
+            <p>Amount Paid<br><strong>₦{{ "{:,.0f}".format(amount_paid) }}</strong></p>
+            <p>Outstanding Balance<br><strong>₦{{ "{:,.0f}".format(outstanding) }}</strong></p>
 
-    <p>
-        Amount Paid<br>
-        <strong>₦{{ "{:,.0f}".format(amount_paid) }}</strong>
-    </p>
+            <p>
+                <a href="/export-report">
+                    <button type="button">Download Excel Report</button>
+                </a>
+            </p>
+        </section>
+    </main>
 
-    <p>
-        Outstanding Balance<br>
-        <strong>₦{{ "{:,.0f}".format(outstanding) }}</strong>
-    </p>
-    <p>
-    <a href="/export-report">
-        <button type="button">Download Excel Report</button>
-    </a>
-</p>
-</section>
+</body>
+</html>
