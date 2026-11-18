@@ -258,6 +258,11 @@ def order_details(request: Request, order_id: int, error: str = None):
         connection.close()
         return {"error": "Order not found"}
 
+    customer_phone = cursor.execute(
+        "SELECT phone FROM customers WHERE name = ?",
+        (order[1],)
+    ).fetchone()
+
     items = cursor.execute(
         "SELECT product_name, quantity, unit_price FROM order_items WHERE order_id = ?",
         (order_id,)
@@ -276,7 +281,9 @@ def order_details(request: Request, order_id: int, error: str = None):
     context={
         "order": order,
         "items": items,
-        "payments": payments
+        "payments": payments,
+        "customer_phone": customer_phone[0] if customer_phone else "Not provided",
+        "else": error    
     }
 )
 
