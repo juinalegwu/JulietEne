@@ -4,4 +4,9 @@
     <a href="/orders">Order History</a>
     <a href="/customers">Customers</a>
     <a href="/backups">Backups</a>
+
+    <form action="/logout" method="POST" style="display: inline;">
+        <input type="hidden" name="csrf_token" value="{{ request.session.csrf_token }}">
+        <button type="submit">Logout</button>
+    </form>
 </nav>

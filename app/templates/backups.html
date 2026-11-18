@@ -34,6 +34,7 @@
        
              <td>
                         <form action="/restore" method="POST"
+                        <input type="hidden" name="csrf_token" value="{{ request.session.csrf_token }}">
                               onsubmit="return confirm('Are you sure? Your current database will be replaced.')">
 
                             <input type="hidden" name="backup_name"

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Login - Juliet's Sweet Treats</title>
+</head>
+<body>
+
+    <h1>Juliet's Sweet Treats</h1>
+    <h2>Administrator Login</h2>
+
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    <form method="POST" action="/login">
+        <input type="hidden" name="csrf_token" value="{{ request.session.csrf_token }}">
+        <label>Password:</label>
+        <input type="password" name="password" required>
+
+        <button type="submit">Login</button>
+    </form>
+
+</body>
+</html>

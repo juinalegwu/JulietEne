@@ -62,7 +62,7 @@
 <h3>Record a Payment</h3>
 
 <form action="/orders/{{ order[0] }}/payment" method="post">
-
+<input type="hidden" name="csrf_token" value="{{ request.session.csrf_token }}">
     <label for="amount">Payment Amount (₦):</label>
     <input
         type="number"
@@ -141,8 +141,10 @@
     <button type="button">Edit Order</button>
 </a>
         <br>
-        <form action="/orders/{{ order[0] }}/delete" method="post"
-      onsubmit="return confirm('Are you sure you want to delete this order?');">
+        
+    <form action="/orders/{{ order[0] }}/delete" method="post"
+      <input type="hidden" name="csrf_token" value="{{ request.session.csrf_token }}">
+    onsubmit="return confirm('Are you sure you want to delete this order?');">
     <button type="submit">Delete Order</button>
 </form>
         <a href="/orders">Back to Order History</a>

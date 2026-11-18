@@ -1,6 +1,11 @@
+import os
+from starlette.middleware.sessions import SessionMiddleware
+from pwdlib import PasswordHash
 import sqlite3
 from pathlib import Path
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request, Form, Depends, HTTPException
+from dotenv import load_dotenv
+import secrets
 
 
 from datetime import datetime
@@ -12,13 +17,108 @@ from reports import generate_full_report
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATABASE = BASE_DIR / "bakery.db"
+load_dotenv(BASE_DIR / ".env")
 
 
 app = FastAPI(title="Juliet's Sweet Treats")
 
+SESSION_SECRET = os.getenv("SESSION_SECRET")
+ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH")
+
+if not SESSION_SECRET or not ADMIN_PASSWORD_HASH:
+    raise RuntimeError("Missing authentication settings in .env")
+
+password_hash = PasswordHash.recommended()
+
+
+@app.middleware("http")
+async def require_admin(request: Request, call_next):
+    public_paths = {"/login", "/static"}
+
+    if (
+        request.url.path not in public_paths
+        and not request.url.path.startswith("/static/")
+        and not request.session.get("admin_authenticated")
+    ):
+        return RedirectResponse("/login", status_code=303)
+
+    return await call_next(request)
+
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SESSION_SECRET,
+    same_site="lax",
+    https_only=os.getenv("ENVIRONMENT") == "production"
+)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "app" / "static"), name="static")
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "app" / "templates"))
+def verify_csrf(
+    request: Request,
+    csrf_token: str = Form(...)
+):
+    session_token = request.session.get("csrf_token", "")
+
+    if not secrets.compare_digest(
+        csrf_token,
+        request.session.get("csrf_token", "")
+    ):
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={"error": "Invalid security token. Refresh and try again."},
+            status_code=403
+        )
+
+    if not password_hash.verify(password, ADMIN_PASSWORD_HASH):
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={"error": "Incorrect password."},
+            status_code=401
+        )
+ 
+@app.get("/login")
+def login_page(request: Request):
+    request.session["csrf_token"] = secrets.token_urlsafe(32)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"error": None}
+    )
+ 
+
+@app.post("/login")
+def login(
+    request: Request,
+    password: str = Form(...),
+    csrf_token: str = Form(...)
+):
+    if not secrets.compare_digest(
+        csrf_token,
+        request.session.get("csrf_token", "")
+    ):
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={"error": "Invalid security token. Refresh and try again."},
+            status_code=403
+        )
+
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={"error": "Incorrect password."},
+            status_code=401
+        )
+
+    request.session.clear()
+    request.session["admin_authenticated"] = True
+    request.session["csrf_token"] = secrets.token_urlsafe(32)
+
+    return RedirectResponse("/", status_code=303)
 
 @app.on_event("startup")
 def create_startup_backup():
@@ -111,7 +211,7 @@ def new_order(request: Request):
         context={"products": products}
     )
 
-@app.post("/new-order")
+@app.post("/new-order", dependencies=[Depends(verify_csrf)])
 async def create_order(
     request: Request,
     customer_name: str = Form(...),
@@ -287,7 +387,7 @@ def order_details(request: Request, order_id: int, error: str = None):
     }
 )
 
-@app.post("/orders/{order_id}/payment")
+@app.post("/orders/{order_id}/payment", dependencies=[Depends(verify_csrf)])
 def record_order_payment(
     order_id: int,
     amount: int = Form(...),
@@ -316,7 +416,7 @@ def record_order_payment(
         status_code=303
     )
 
-@app.post("/orders/{order_id}/delete")
+@app.post("/orders/{order_id}/delete", dependencies=[Depends(verify_csrf)])
 def delete_order_page(order_id: int):
     delete_order(order_id)
 
@@ -326,7 +426,7 @@ def delete_order_page(order_id: int):
     )
 
 
-@app.get("/orders/{order_id}/edit")
+@app.post("/orders/{order_id}/edit", dependencies=[Depends(verify_csrf)])
 def edit_order_page(request: Request, order_id: int, error: str = None):
     connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
@@ -500,7 +600,7 @@ async def view_backups(request: Request):
     "message": request.query_params.get("message")
 }
     )
-@app.post("/restore")
+@app.post("/restore", dependencies=[Depends(verify_csrf)])
 async def restore_backup(backup_name: str = Form(...)):
 
     backup_folder = BASE_DIR / "backups"
@@ -548,3 +648,7 @@ async def restore_backup(backup_name: str = Form(...)):
     url="/backups?message=Database+restored+successfully",
     status_code=303
 )
+@app.post("/logout", dependencies=[Depends(verify_csrf)])
+def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse("/login", status_code=303)
