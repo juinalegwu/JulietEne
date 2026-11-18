@@ -42,13 +42,22 @@ def get_orders():
 def add_orders_to_sheet(sheet):
 
     orders = get_orders()
+    connection = sqlite3.connect("bakery.db")
+    cursor = connection.cursor()
 
     for order in orders:
 
         order_id = order[0]
         customer = order[1]
         total = order[2]
-        payment_method = order[3]
+        cursor.execute(
+            "SELECT DISTINCT payment_method FROM payments WHERE order_id = ?",
+            (order_id,)
+        )
+
+        payment_methods = [row[0] for row in cursor.fetchall()]
+
+        payment_method = ", ".join(payment_methods) if payment_methods else "Not Paid"
         payment_status = order[4]
         order_date = order[6]
         amount_paid = order[7]
@@ -65,6 +74,8 @@ def add_orders_to_sheet(sheet):
             payment_method,
             order_date
         ])
+        
+    connection.close()
 
 
 def save_report(workbook):
