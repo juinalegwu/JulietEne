@@ -10,15 +10,15 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from reports import generate_full_report
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATABASE = BASE_DIR / "bakery.db"
+
 
 app = FastAPI(title="Juliet's Sweet Treats")
 
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static", StaticFiles(directory=BASE_DIR / "app" / "static"), name="static")
 
-templates = Jinja2Templates(directory="app/templates")
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-DATABASE = BASE_DIR / "bakery.db"
+templates = Jinja2Templates(directory=str(BASE_DIR / "app" / "templates"))
 
 @app.on_event("startup")
 def create_startup_backup():

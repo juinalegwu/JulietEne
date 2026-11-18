@@ -2,15 +2,19 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
+BASE_DIR = Path(__file__).resolve().parent
+DATABASE = BASE_DIR / "bakery.db"
+BACKUP_DIR = BASE_DIR / "backups"
+
 def backup_database():
-    backup_folder = Path("backups")
+    backup_folder = BACKUP_DIR
     backup_folder.mkdir(exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     backup_file = backup_folder / f"bakery_backup_{timestamp}.db"
 
-    source = sqlite3.connect("bakery.db")
+    source = sqlite3.connect(DATABASE)
     destination = sqlite3.connect(str(backup_file))
 
     try:
@@ -32,7 +36,7 @@ def backup_database():
         old_backup.unlink()
         print(f"Old backup deleted: {old_backup}")
 # Connect to database
-connection = sqlite3.connect("bakery.db")
+connection = sqlite3.connect(DATABASE)
 cursor = connection.cursor()
 
 
@@ -128,7 +132,7 @@ connection.close()
 
 # Get products from the database
 def get_products():
-    connection = sqlite3.connect("bakery.db")
+    connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
 
     cursor.execute("SELECT * FROM products")
@@ -142,7 +146,7 @@ def get_products():
 
 # Save a new order
 def save_order(customer_name, total, payment_method, payment_status, reference, order_date, orders, amount_paid=0):
-    connection = sqlite3.connect("bakery.db")
+    connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
 
     cursor.execute("""
@@ -184,7 +188,7 @@ def save_order(customer_name, total, payment_method, payment_status, reference, 
 
 # Get order history
 def get_order_history():
-    connection = sqlite3.connect("bakery.db")
+    connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
 
     cursor.execute("""
@@ -215,7 +219,7 @@ def get_order_history():
 
 # Search for one order
 def search_order(order_id):
-    connection = sqlite3.connect("bakery.db")
+    connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
 
     cursor.execute("""
@@ -233,7 +237,7 @@ def search_order(order_id):
 
 # Get items belonging to one order
 def get_order_items(order_id):
-    connection = sqlite3.connect("bakery.db")
+    connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
 
     cursor.execute("""
@@ -250,7 +254,7 @@ def get_order_items(order_id):
 
 # Delete an order
 def delete_order(order_id):
-    connection = sqlite3.connect("bakery.db")
+    connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
 
     cursor.execute(
@@ -273,7 +277,7 @@ def delete_order(order_id):
 
 # Update customer name on an order
 def update_order_customer(order_id, new_name):
-    connection = sqlite3.connect("bakery.db")
+    connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
 
     cursor.execute("""
@@ -286,7 +290,7 @@ def update_order_customer(order_id, new_name):
     connection.close()
 
 def update_order_items(order_id, total, orders):
-    connection = sqlite3.connect("bakery.db")
+    connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
 
     # Get the amount already paid
@@ -348,7 +352,7 @@ def update_order_items(order_id, total, orders):
 
 # Record an additional payment
 def record_payment(order_id, amount, payment_method, reference, payment_date):
-    connection = sqlite3.connect("bakery.db")
+    connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
 
     cursor.execute("""
@@ -367,7 +371,7 @@ def record_payment(order_id, amount, payment_method, reference, payment_date):
 
 # Update order payment details
 def update_order_payment(order_id, amount_paid):
-    connection = sqlite3.connect("bakery.db")
+    connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
 
     cursor.execute("""
@@ -408,7 +412,7 @@ def update_order_payment(order_id, amount_paid):
 
 
 # Add an additional payment and update the order
-def add_payment(order_id, amount, payment_method, reference, payment_date, db_path="bakery.db"):
+def add_payment(order_id, amount, payment_method, reference, payment_date, db_path=DATABASE):
     connection = sqlite3.connect(db_path)
     cursor = connection.cursor()
 
@@ -456,7 +460,7 @@ def add_payment(order_id, amount, payment_method, reference, payment_date, db_pa
 
 # Get complete payment history for an order
 def get_order_payments(order_id):
-    connection = sqlite3.connect("bakery.db")
+    connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
 
     # Get original order payment details

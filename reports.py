@@ -4,6 +4,10 @@ from datetime import datetime
 from pathlib import Path
 from openpyxl.styles import Font, PatternFill
 
+BASE_DIR = Path(__file__).resolve().parent
+DATABASE = BASE_DIR / "bakery.db"
+REPORT_DIR = BASE_DIR / "reports"
+
 def create_report():
 
     workbook = Workbook()
@@ -26,7 +30,7 @@ def create_report():
 
 def get_orders():
 
-    connection = sqlite3.connect("bakery.db")
+    connection = sqlite3.connect(DATABASE)
 
     cursor = connection.cursor()
 
@@ -42,7 +46,7 @@ def get_orders():
 def add_orders_to_sheet(sheet):
 
     orders = get_orders()
-    connection = sqlite3.connect("bakery.db")
+    connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
 
     for order in orders:
@@ -80,7 +84,7 @@ def add_orders_to_sheet(sheet):
 
 def save_report(workbook):
 
-    report_folder = Path("reports")
+    report_folder = REPORT_DIR
     report_folder.mkdir(exist_ok=True)
 
     filename = datetime.now().strftime("orders_%Y-%m-%d_%H-%M-%S.xlsx")
@@ -144,7 +148,7 @@ def save_report(workbook):
 
 def get_payments():
 
-    connection = sqlite3.connect("bakery.db")
+    connection = sqlite3.connect(DATABASE)
 
     cursor = connection.cursor()
 
@@ -195,7 +199,7 @@ def add_customers_sheet(workbook):
 
 def get_customers():
 
-    connection = sqlite3.connect("bakery.db")
+    connection = sqlite3.connect(DATABASE)
 
     cursor = connection.cursor()
 
@@ -229,7 +233,7 @@ def add_products_sheet(workbook):
 
 def get_products():
 
-    connection = sqlite3.connect("bakery.db")
+    connection = sqlite3.connect(DATABASE)
 
     cursor = connection.cursor()
 
@@ -265,7 +269,7 @@ def add_order_items_sheet(workbook):
 
 def get_order_items():
 
-    connection = sqlite3.connect("bakery.db")
+    connection = sqlite3.connect(DATABASE)
 
     cursor = connection.cursor()
 
