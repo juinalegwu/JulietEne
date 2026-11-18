@@ -8,12 +8,12 @@
 </head>
 <body>
 
-    <header>
-        <h1>Juliet's Sweet Treats</h1>
-        <p>Order Details</p>
-    </header>
-
     <main>
+        <header>
+            <h1>Juliet's Sweet Treats</h1>
+            <p>Order Details</p>
+        </header>
+
         <h2>Order #{{ order[0] }}</h2>
 
         {% if error == "payment" %}
@@ -134,7 +134,7 @@
         <button onclick="window.print()" type="button">
     Print Receipt
 </button>
-<br><br>
+
 
 <a href="/orders/{{ order[0] }}/edit">
 

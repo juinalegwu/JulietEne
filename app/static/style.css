@@ -275,17 +275,27 @@ form[action="/new-order"] button {
 }
 /* Print Receipt Styling */
 
+@page {
+    size: A4;
+    margin: 10mm;
+}
+
 @media print {
     body {
         background: white;
         color: black;
         font-family: Arial, sans-serif;
+        font-size: 10pt;
     }
 
     header {
         background: white;
         color: #683188;
         border-bottom: 2px solid #683188;
+        padding: 8px;
+        margin-bottom: 8px;
+        break-after: avoid-page;
+        page-break-after: avoid;
     }
 
     button,
@@ -295,22 +305,38 @@ form[action="/new-order"] button {
     }
 
     main {
-        padding: 20px;
+        padding: 8px !important;
     }
 
     h1, h2, h3 {
         color: #683188;
+        margin: 8px 0;
+    }
+
+    p {
+        margin: 5px 0;
     }
 
     table {
         width: 100%;
         border-collapse: collapse;
+        font-size: 9pt;
+        page-break-inside: avoid;
     }
 
     th, td {
         border: 1px solid #ccc;
-        padding: 10px;
+        padding: 5px;
         text-align: left;
+    }
+
+    tr {
+        page-break-inside: avoid;
+    }
+
+    section {
+        margin: 5px 0;
+        padding: 8px;
     }
 }
 .success-message {
