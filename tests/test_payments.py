@@ -2,11 +2,23 @@ import unittest
 import sqlite3
 import tempfile
 import os
+import database
+from unittest.mock import patch
+from bakery_calculator import pay_with_cash
+
 
 from database import add_payment
 
 
 class TestPayments(unittest.TestCase):
+
+    @patch("builtins.input", return_value="500")
+    def test_cash_overpayment_returns_change(self, mock_input):
+        result = pay_with_cash(400)
+
+        self.assertEqual(result[0], "Cash")
+        self.assertEqual(result[3], 100)
+        self.assertEqual(result[4], 400)
 
     def setUp(self):
         # Create a temporary database
@@ -36,6 +48,16 @@ class TestPayments(unittest.TestCase):
                 payment_method TEXT,
                 reference TEXT,
                 payment_date TEXT
+            )
+        """)
+        # Create order_items table
+        cursor.execute("""
+            CREATE TABLE order_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_id INTEGER,
+                product_name TEXT,
+                quantity INTEGER,
+                unit_price INTEGER
             )
         """)
 
@@ -292,3 +314,76 @@ class TestPayments(unittest.TestCase):
 
         self.assertFalse(result)
         self.assertEqual(payment_count, 0)
+
+    @patch("builtins.input", return_value="0")
+    def test_unpaid_order(self, mock_input):
+        result = pay_with_cash(400)
+
+        self.assertEqual(result[0], "Cash")
+        self.assertEqual(result[1], "UNPAID")
+        self.assertEqual(result[3], 0)
+        self.assertEqual(result[4], 0)
+    def test_editing_order_preserves_payment_history(self):
+        original_database = database.DATABASE
+        database.DATABASE = self.db_path
+
+        try:
+            connection = sqlite3.connect(self.db_path)
+            cursor = connection.cursor()
+
+            cursor.execute("""
+                INSERT INTO payments
+                (order_id, amount, payment_method, reference, payment_date)
+                VALUES (1, 400, 'Cash', NULL, '2026-11-19')
+            """)
+
+            connection.commit()
+            connection.close()
+
+            result = database.update_order_items(
+                1,
+                1500,
+                [("Chocolate Cake", 1500, 1)]
+            )
+
+            self.assertTrue(result)
+
+            connection = sqlite3.connect(self.db_path)
+            cursor = connection.cursor()
+
+            cursor.execute("""
+                SELECT amount, payment_method
+                FROM payments WHERE order_id = 1
+            """)
+
+            payment = cursor.fetchone()
+
+            cursor.execute("""
+                SELECT total, amount_paid, payment_status
+                FROM orders WHERE id = 1
+            """)
+
+            order = cursor.fetchone()
+            connection.close()
+
+            self.assertEqual(payment, (400, "Cash"))
+            self.assertEqual(order, (1500, 400, "PARTIALLY PAID"))
+
+        finally:
+            database.DATABASE = original_database
+
+    def test_rejects_order_total_below_amount_paid(self):
+        original_database = database.DATABASE
+        database.DATABASE = self.db_path
+
+        try:
+            result = database.update_order_items(
+                1,
+                300,
+                [("Buns", 300, 1)]
+            )
+
+            self.assertFalse(result)
+
+        finally:
+            database.DATABASE = original_database
