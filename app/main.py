@@ -1,7 +1,11 @@
 import sqlite3
 from pathlib import Path
 from fastapi import FastAPI, Request, Form
-
+import os
+import secrets
+from dotenv import load_dotenv
+from pwdlib import PasswordHash
+from starlette.middleware.sessions import SessionMiddleware
 
 from datetime import datetime
 from database import save_order, get_order_history, add_payment, delete_order, update_order_customer, update_order_items, backup_database
@@ -9,17 +13,133 @@ from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from reports import generate_full_report
+from fastapi import FastAPI, Request, Form, HTTPException
+
+load_dotenv()
+
+password_hash = PasswordHash.recommended()
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
+ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATABASE = BASE_DIR / "bakery.db"
 
 
+
 app = FastAPI(title="Juliet's Sweet Treats")
 
-app.mount("/static", StaticFiles(directory=BASE_DIR / "app" / "static"), name="static")
+
+
+app.mount(
+    "/static",
+    StaticFiles(directory=BASE_DIR / "app" / "static"),
+    name="static"
+)
+
+@app.middleware("http")
+async def protect_admin_pages(request: Request, call_next):
+
+    public_paths = ["/login", "/static"]
+
+    if request.url.path.startswith(tuple(public_paths)):
+        return await call_next(request)
+
+    if not request.session.get("admin"):
+        return RedirectResponse("/login", status_code=303)
+
+    return await call_next(request)
+
+
+
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SECRET_KEY,
+    max_age=3600,
+    same_site="lax",
+    https_only=False
+)
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "app" / "templates"))
 
+def get_csrf_token(request: Request):
+    token = request.session.get("csrf_token")
+
+    if not token:
+        token = secrets.token_urlsafe(32)
+        request.session["csrf_token"] = token
+
+    return token
+
+@app.get("/login")
+def login_page(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={
+            "request": request,
+            "csrf_token": get_csrf_token(request)
+        }
+    )
+@app.post("/login")
+def login(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    csrf_token: str = Form(...)
+):
+    if not secrets.compare_digest(
+        csrf_token,
+        request.session.get("csrf_token", "")
+    ):
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={
+                "request": request,
+                "csrf_token": get_csrf_token(request),
+                "error": "Invalid security token. Please try again."
+            },
+            status_code=403
+        )
+
+    if (
+        username != ADMIN_USERNAME
+        or not password_hash.verify(password, ADMIN_PASSWORD_HASH)
+    ):
+        return templates.TemplateResponse(
+            request=request,
+            name="login.html",
+            context={
+                "request": request,
+                "csrf_token": get_csrf_token(request),
+                "error": "Invalid username or password."
+            },
+            status_code=401
+        )
+
+    request.session["admin"] = True
+
+    return RedirectResponse("/", status_code=303)
+@app.post("/logout")
+def logout(
+    request: Request,
+    csrf_token: str = Form(...)
+):
+    if not secrets.compare_digest(
+        csrf_token,
+        request.session.get("csrf_token", "")
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid security token."
+        )
+
+    request.session.clear()
+
+    return RedirectResponse("/login", status_code=303)
 @app.on_event("startup")
 def create_startup_backup():
     backup_database()
@@ -86,7 +206,10 @@ def home(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",
-        context=stats
+        context={
+            **stats,
+            "csrf_token": get_csrf_token(request)
+        }
     )
 
 @app.get("/export-report")
