@@ -41,11 +41,11 @@ app.mount(
 @app.middleware("http")
 async def protect_admin_pages(request: Request, call_next):
 
-    public_paths = ["/login", "/static"]
-
-    if request.url.path.startswith(tuple(public_paths)):
+    if (
+        request.url.path in ["/", "/login", "/shop", "/place-order"]
+        or request.url.path.startswith("/static/")
+    ):
         return await call_next(request)
-
     if not request.session.get("admin"):
         return RedirectResponse("/login", status_code=303)
 
@@ -63,7 +63,39 @@ app.add_middleware(
 )
 
 templates = Jinja2Templates(directory=str(BASE_DIR / "app" / "templates"))
+@app.get("/")
+def public_home(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="home.html",
+        context={"request": request}
+    )
+@app.get("/shop")
+def shop(request: Request):
+    products = get_products()
 
+    return templates.TemplateResponse(
+        request=request,
+        name="shop.html",
+        context={
+            "request": request,
+            "products": products
+        }
+    )
+@app.get("/place-order")
+def place_order(request: Request, product_id: int = None):
+    products = get_products()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="place_order.html",
+        context={
+            "request": request,
+            "products": products,
+            "csrf_token": get_csrf_token(request),
+            "selected_product_id": product_id
+        }
+    )
 def get_csrf_token(request: Request):
     token = request.session.get("csrf_token")
 
@@ -122,7 +154,7 @@ def login(
 
     request.session["admin"] = True
 
-    return RedirectResponse("/", status_code=303)
+    return RedirectResponse("/admin", status_code=303)
 @app.post("/logout")
 def logout(
     request: Request,
@@ -198,7 +230,7 @@ def get_dashboard_stats():
     }
 
 
-@app.get("/")
+@app.get("/admin")
 def home(request: Request):
 
     stats = get_dashboard_stats()
@@ -315,9 +347,91 @@ async def create_order(
     )
 
     return RedirectResponse(
-        url="/",
+        url="/admin",
         status_code=303
     )
+
+@app.post("/place-order")
+async def submit_customer_order(
+    request: Request,
+    customer_name: str = Form(...),
+    customer_phone: str = Form(...),
+    csrf_token: str = Form(...)
+):
+    if not secrets.compare_digest(
+        csrf_token,
+        request.session.get("csrf_token", "")
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid security token."
+        )
+
+    form = await request.form()
+    products = get_products()
+
+    orders = []
+    total = 0
+
+    for product in products:
+        product_id = product[0]
+        product_name = product[1]
+        price = product[2]
+
+        try:
+            quantity = int(form.get(f"quantity_{product_id}", 0) or 0)
+        except (ValueError, TypeError):
+            return RedirectResponse("/place-order", status_code=303)
+
+        if quantity < 0:
+            return RedirectResponse("/place-order", status_code=303)
+
+        if quantity > 0:
+            orders.append((product_name, price, quantity))
+            total += price * quantity
+
+    if not customer_name.strip() or not customer_phone.strip() or not orders:
+        return RedirectResponse("/place-order", status_code=303)
+
+    customer_name = customer_name.strip()
+    customer_phone = customer_phone.strip()
+
+    connection = sqlite3.connect(DATABASE)
+    cursor = connection.cursor()
+
+    existing_customer = cursor.execute(
+        "SELECT id FROM customers WHERE name = ?",
+        (customer_name,)
+    ).fetchone()
+
+    if existing_customer:
+        cursor.execute(
+            "UPDATE customers SET phone = ? WHERE id = ?",
+            (customer_phone, existing_customer[0])
+        )
+    else:
+        cursor.execute(
+            "INSERT INTO customers (name, phone) VALUES (?, ?)",
+            (customer_name, customer_phone)
+        )
+
+    connection.commit()
+    connection.close()
+
+    order_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    save_order(
+        customer_name,
+        total,
+        "Not Paid",
+        "UNPAID",
+        None,
+        order_date,
+        orders,
+        0
+    )
+
+    return RedirectResponse("/shop?order=received", status_code=303)
 
 @app.get("/search-orders")
 def search_orders(request: Request, query: str = ""):

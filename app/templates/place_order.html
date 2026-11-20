@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Place Your Order | Juliet's Sweet Treats</title>
+    <link rel="stylesheet" href="/static/home.css">
+</head>
+<body>
+
+    <nav>
+        <a href="/">Home</a>
+        <a href="/shop">Our Products</a>
+    </nav>
+
+    <h1>Place Your Order</h1>
+    <p>Fill in your details and choose your favourite treats.</p>
+
+    <form method="POST" action="/place-order">
+
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <label>Your Name</label>
+        <input type="text" name="customer_name" required>
+
+        <label>Phone Number</label>
+        <input type="text" name="customer_phone" required>
+
+        <h2>Choose Your Products</h2>
+
+        {% for product in products %}
+            <div class="product-card">
+                <h3>{{ product[1] }}</h3>
+                <p>₦{{ "{:,.0f}".format(product[2]) }}</p>
+
+                <label>Quantity</label>
+                <input
+                    type="number"
+                    name="quantity_{{ product[0] }}"
+                    min="0"
+                    value="{{ 1 if selected_product_id == product[0] else 0 }}"
+                >
+            </div>
+        {% endfor %}
+
+        <button type="submit">Submit Order</button>
+
+    </form>
+
+</body>
+</html>

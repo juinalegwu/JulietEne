@@ -143,8 +143,9 @@
 </a>
         <br>
         <form action="/orders/{{ order[0] }}/delete" method="post"
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       onsubmit="return confirm('Are you sure you want to delete this order?');">
+
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <button type="submit">Delete Order</button>
 </form>
         <a href="/orders">Back to Order History</a>

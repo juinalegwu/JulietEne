@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Products | Juliet's Sweet Treats</title>
+    <link rel="stylesheet" href="/static/home.css">
+</head>
+<body>
+
+    <nav>
+        <h2>Juliet's Sweet Treats</h2>
+
+        <div>
+            <a href="/">Home</a>
+            <a href="/shop">Our Products</a>
+        </div>
+    </nav>
+
+    <h1>Our Delicious Treats</h1>
+    {% if request.query_params.get('order') == 'received' %}
+    <div class="success-message">
+        Thank you for ordering from Juliet's Sweet Treats!
+        Your order has been received. We will contact you shortly.
+    </div>
+{% endif %}
+
+    <p>Explore our cakes and freshly made small chops.</p>
+<div class="products">
+    {% for product in products %}
+        <div class="product-card">
+            <h3>{{ product[1] }}</h3>
+            <p>₦{{ "{:,.0f}".format(product[2]) }}</p>
+
+            <a href="/place-order?product_id={{ product[0] }}">
+                Order Now
+            </a>
+        </div>
+    {% endfor %}
+</div>
+</body>
+</html>

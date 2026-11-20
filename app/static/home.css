@@ -1,0 +1,131 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #F8FAFC;
+    color: #650D36;
+}
+
+nav {
+    background-color: #A4134E;
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+nav h2 {
+    margin: 0;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    margin: 10px;
+    font-weight: bold;
+}
+
+nav a:hover {
+    color: #00E5FF;
+}
+
+.hero {
+    text-align: center;
+    padding: 120px 20px;
+    background: linear-gradient(135deg, #E5FBFF, #F8FAFC);
+    border-radius: 15px;
+}
+
+.hero h1 {
+    font-size: 48px;
+    color: #650D36;
+    margin-bottom: 20px;
+}
+
+.hero p {
+    font-size: 19px;
+    line-height: 1.8;
+    color: #333;
+    max-width: 650px;
+    margin: 0 auto 30px;
+}
+
+.hero a {
+    display: inline-block;
+    background-color: #A4134E;
+    color: white;
+    padding: 15px 30px;
+    text-decoration: none;
+    border-radius: 30px;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.hero a:hover {
+    background-color: #007C91;
+    box-shadow: 0 0 15px #00E5FF;
+    transform: translateY(-3px);
+}
+}.products {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 20px;
+}
+
+.product-card {
+    background: white;
+    border: 2px solid #00E5FF;
+    border-radius: 12px;
+    padding: 20px;
+    width: 200px;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.product-card h3 {
+    color: #A4134E;
+}
+
+.product-card p {
+    color: #007C91;
+    font-weight: bold;
+}
+body > h1,
+body > p {
+    text-align: center;
+}
+
+body > h1 {
+    color: #A4134E;
+    margin-top: 35px;
+}
+
+body > p {
+    color: #007C91;
+}
+.product-card a {
+    display: inline-block;
+    background: #A4134E;
+    color: white;
+    padding: 10px 18px;
+    border-radius: 6px;
+    text-decoration: none;
+    margin-top: 10px;
+}
+
+.product-card a:hover {
+    background: #650D36;
+}
+
+.success-message {
+    background-color: #E0FAFF;
+    color: #007C91;
+    border: 2px solid #00E5FF;
+    padding: 18px;
+    margin: 20px auto;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: bold;
+    max-width: 600px;
+}
