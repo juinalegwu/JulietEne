@@ -15,7 +15,7 @@
 <main>
 
     <form action="/orders/{{ order[0] }}/edit" method="post">
-
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
         {% if error == "payment" %}
     <p class="error-message">
         The new total cannot be less than the amount already paid.

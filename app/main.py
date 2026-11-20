@@ -231,16 +231,29 @@ def new_order(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="new_order.html",
-        context={"products": products}
+        context={
+            "products": products,
+            "csrf_token": get_csrf_token(request)
+        }
     )
 
 @app.post("/new-order")
 async def create_order(
     request: Request,
     customer_name: str = Form(...),
-    customer_phone: str = Form("")
+    customer_phone: str = Form(""),
+    csrf_token: str = Form(...)
     
 ):
+
+    if not secrets.compare_digest(
+        csrf_token,
+        request.session.get("csrf_token", "")
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid security token."
+        )
     form = await request.form()
     products = get_products()
 
@@ -405,6 +418,7 @@ def order_details(request: Request, order_id: int, error: str = None):
         "order": order,
         "items": items,
         "payments": payments,
+        "csrf_token": get_csrf_token(request),
         "customer_phone": customer_phone[0] if customer_phone else "Not provided",
         "else": error    
     }
@@ -412,11 +426,21 @@ def order_details(request: Request, order_id: int, error: str = None):
 
 @app.post("/orders/{order_id}/payment")
 def record_order_payment(
+    request: Request,
     order_id: int,
     amount: int = Form(...),
     payment_method: str = Form(...),
-    reference: str = Form("")
+    reference: str = Form(""),
+    csrf_token: str = Form(...)
 ):
+    if not secrets.compare_digest(
+        csrf_token,
+        request.session.get("csrf_token", "")
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid security token."
+        )
     payment_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     success = add_payment(
@@ -440,14 +464,21 @@ def record_order_payment(
     )
 
 @app.post("/orders/{order_id}/delete")
-def delete_order_page(order_id: int):
+def delete_order_page(request: Request, order_id: int, csrf_token: str = Form(...)):
     delete_order(order_id)
 
     return RedirectResponse(
         url="/orders",
         status_code=303
     )
-
+    if not secrets.compare_digest(
+        csrf_token,
+        request.session.get("csrf_token", "")
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid security token."
+        )
 
 @app.get("/orders/{order_id}/edit")
 def edit_order_page(request: Request, order_id: int, error: str = None):
@@ -484,7 +515,8 @@ def edit_order_page(request: Request, order_id: int, error: str = None):
             "order": order,
             "products": products,
             "order_items": order_items,
-            "error": error
+            "error": error,
+            "csrf_token": get_csrf_token(request)
         }
     )
 
@@ -493,6 +525,18 @@ async def update_order_page(
     request: Request,
     order_id: int
 ):
+
+    form_data = await request.form()
+    csrf_token = form_data.get("csrf_token", "")
+
+    if not secrets.compare_digest(
+        csrf_token,
+        request.session.get("csrf_token", "")
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid security token."
+        )
     form_data = await request.form()
 
     customer_name = form_data.get("customer_name")
@@ -620,21 +664,24 @@ async def view_backups(request: Request):
         name="backups.html",
         context={
     "backups": backups,
+    "csrf_token": get_csrf_token(request),
     "message": request.query_params.get("message")
 }
     )
 @app.post("/restore")
-async def restore_backup(backup_name: str = Form(...)):
-
-    backup_folder = BASE_DIR / "backups"
-    backup_path = (backup_folder / backup_name).resolve()
-
-    if (
-        backup_path.parent != backup_folder.resolve()
-        or not backup_path.is_file()
-        or not backup_path.name.startswith("bakery_backup_")
-        or backup_path.suffix != ".db"
+async def restore_backup(
+    request: Request,
+    backup_name: str = Form(...),
+    csrf_token: str = Form(...)
+):
+    if not secrets.compare_digest(
+        csrf_token,
+        request.session.get("csrf_token", "")
     ):
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid security token."
+        )
         return {"error": "Invalid backup file"}
 
     source = sqlite3.connect(str(backup_path))

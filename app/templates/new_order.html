@@ -18,6 +18,7 @@
         <h2>New Bakery Order</h2>
 
         <form action="/new-order" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <label for="customer_name">Customer Name:</label>
             <input
                 type="text"
