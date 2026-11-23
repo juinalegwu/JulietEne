@@ -1,12 +1,13 @@
+
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background-color: #F8FAFC;
+    background-color: #FFF1E8;
     color: #650D36;
 }
 
 nav {
-    background-color: #A4134E;
+    background-color: #650D36;
     color: white;
     padding: 20px;
     display: flex;
@@ -26,13 +27,12 @@ nav a {
 }
 
 nav a:hover {
-    color: #00E5FF;
+    color: #F4A6C1;
 }
-
 .hero {
     text-align: center;
     padding: 120px 20px;
-    background: linear-gradient(135deg, #E5FBFF, #F8FAFC);
+    background: linear-gradient(135deg, #FFF1E8, #FCE0E8);
     border-radius: 15px;
 }
 
@@ -45,14 +45,53 @@ nav a:hover {
 .hero p {
     font-size: 19px;
     line-height: 1.8;
-    color: #333;
+    color: #5C3545;
     max-width: 650px;
     margin: 0 auto 30px;
 }
 
-.hero a {
+.hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+    padding: 70px 8%;
+    background: linear-gradient(135deg, #FFF1E8, #FCE0E8);
+    border-radius: 15px;
+}
+
+.hero a:hover {
+    background-color: #650D36;
+    transform: translateY(-3px);
+}
+
+.hero-image img {
+    width: 100%;
+    height: auto;
+    max-height: 500px;
+    object-fit: contain;
+    border-radius: 20px;
+    box-shadow: 0 5px 20px rgba(101, 13, 54, 0.2);
+}
+.hero-content {
+    flex: 1;
+}
+
+.hero-content h1 {
+    font-size: 48px;
+    color: #650D36;
+    margin-bottom: 20px;
+}
+
+.hero-content p {
+    font-size: 19px;
+    line-height: 1.8;
+    color: #5C3545;
+    margin-bottom: 30px;
+}
+.hero-content a {
     display: inline-block;
-    background-color: #A4134E;
+    background-color: #D93678;
     color: white;
     padding: 15px 30px;
     text-decoration: none;
@@ -61,12 +100,12 @@ nav a:hover {
     transition: 0.3s;
 }
 
-.hero a:hover {
-    background-color: #007C91;
-    box-shadow: 0 0 15px #00E5FF;
+.hero-content a:hover {
+    background-color: #650D36;
     transform: translateY(-3px);
 }
-}.products {
+
+.products {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
@@ -128,4 +167,261 @@ body > p {
     text-align: center;
     font-weight: bold;
     max-width: 600px;
+}
+.featured-products {
+    padding: 60px 8%;
+    text-align: center;
+    background-color: #FFF1E8;
+}
+
+.featured-products h2 {
+    color: #650D36;
+    font-size: 32px;
+    margin-bottom: 35px;
+}
+.featured-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+}
+
+.featured-card {
+    background-color: white;
+    border: 2px solid #F4A6C1;
+    border-radius: 15px;
+    padding: 25px;
+    width: auto;
+    box-shadow: 0 4px 10px rgba(101, 13, 54, 0.1);
+}
+
+.featured-card h3 {
+    color: #650D36;
+}
+
+.featured-card p {
+    color: #D93678;
+    font-weight: bold;
+    font-size: 20px;
+}
+.featured-card a {
+    display: inline-block;
+    background-color: #D93678;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.featured-card a:hover {
+    background-color: #650D36;
+}
+.featured-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.featured-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 20px rgba(101, 13, 54, 0.2);
+}
+.featured-card img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-bottom: 15px;
+}
+/* Tablet screens */
+@media (max-width: 768px) {
+    .featured-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Mobile screens */
+@media (max-width: 500px) {
+    .featured-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 500px) {
+    .hero {
+        flex-direction: column;
+        text-align: center;
+        padding: 40px 6%;
+        gap: 25px;
+    }
+
+    .hero-content h1 {
+        font-size: 36px;
+        line-height: 1.2;
+    }
+
+    .hero-content p {
+        font-size: 16px;
+        line-height: 1.6;
+    }
+
+    .hero-image {
+        width: 100%;
+    }
+
+    .hero-image img {
+        width: 100%;
+        height: auto;
+        max-height: 300px;
+        object-fit: contain;
+    }
+}
+
+@media (max-width: 500px) {
+    nav {
+        flex-direction: column;
+        align-items: center;
+        gap: 15px;
+        padding: 20px 10px;
+        text-align: center;
+    }
+
+    nav h2 {
+        margin: 0;
+        font-size: 26px;
+    }
+
+    nav div {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 15px;
+    }
+
+    nav a {
+        font-size: 15px;
+    }
+}
+
+/* Footer styling */
+.site-footer {
+    background-color: #650D36;
+    color: white;
+    text-align: center;
+    padding: 40px 20px;
+    margin-top: 40px;
+}
+
+.site-footer h2 {
+    font-size: 32px;
+    margin-bottom: 15px;
+}
+
+.site-footer p {
+    font-size: 18px;
+    margin: 16px 0;
+    line-height: 1.7;
+}
+
+.site-footer a {
+    color: #F4A6C1;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.site-footer a:hover {
+    color: white;
+    text-decoration: underline;
+}
+.product-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 12px;
+    margin-bottom: 15px;
+}
+/* Place Order Page */
+
+body {
+    background-color: #FFF1E8;
+    color: #650D36;
+}
+/* Order Form */
+
+form {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 30px;
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+/* Order Product Cards */
+
+.product-card {
+    background-color: #FFF1E8;
+    border: 1px solid #F4A6C1;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.product-card h3 {
+    color: #650D36;
+    text-transform: capitalize;
+}
+
+.product-card p {
+    color: #D93678;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+/* Quantity Inputs */
+
+.quantity-input {
+    width: 100%;
+    max-width: 120px;
+    padding: 10px;
+    border: 2px solid #F4A6C1;
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+}
+
+.quantity-input:focus {
+    border-color: #D93678;
+}
+
+/* Order Total */
+
+.order-total {
+    background-color: #650D36;
+    color: white;
+    padding: 20px;
+    margin-top: 25px;
+    margin-bottom: 25px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.order-total h2 {
+    font-size: 26px;
+    margin: 0;
+}
+/* Submit Order Button */
+
+form button {
+    width: 100%;
+    padding: 15px;
+    background-color: #D93678;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+form button:hover {
+    background-color: #650D36;
 }

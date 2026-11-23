@@ -35,17 +35,43 @@
 
                 <label>Quantity</label>
                 <input
-                    type="number"
-                    name="quantity_{{ product[0] }}"
-                    min="0"
-                    value="{{ 1 if selected_product_id == product[0] else 0 }}"
-                >
+    type="number"
+    name="quantity_{{ product[0] }}"
+    class="quantity-input"
+    data-price="{{ product[2] }}"
+    min="0"
+    value="{{ 1 if selected_product_id == product[0] else 0 }}"
+>
             </div>
         {% endfor %}
-
+<div class="order-total">
+    <h2>Order Total: ₦<span id="total-price">0</span></h2>
+</div>
         <button type="submit">Submit Order</button>
 
     </form>
+<script>
+    const quantityInputs = document.querySelectorAll(".quantity-input");
+    const totalPrice = document.getElementById("total-price");
 
+    function calculateTotal() {
+        let total = 0;
+
+        quantityInputs.forEach(input => {
+            const price = Number(input.dataset.price);
+            const quantity = Number(input.value);
+
+            total += price * quantity;
+        });
+
+        totalPrice.textContent = total.toLocaleString("en-NG");
+    }
+
+    quantityInputs.forEach(input => {
+        input.addEventListener("input", calculateTotal);
+    });
+
+    calculateTotal();
+</script>
 </body>
 </html>

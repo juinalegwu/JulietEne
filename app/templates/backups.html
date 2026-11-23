@@ -33,7 +33,21 @@
                     <td>{{ backup.date }}</td>
        
              <td>
-                        <form action="/restore" method="POST"
+    <a href="/download-backup/{{ backup.name }}">
+        <button type="button">Download</button>
+    </a>
+
+    <form action="/restore" method="POST"
+          onsubmit="return confirm('Are you sure? Your current database will be replaced.')">
+
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <input type="hidden" name="backup_name"
+               value="{{ backup.name }}">
+
+        <button type="submit">Restore</button>
+    </form>
+</td>
 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                               onsubmit="return confirm('Are you sure? Your current database will be replaced.')">
 

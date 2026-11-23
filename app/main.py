@@ -751,6 +751,30 @@ def customer_details(request: Request, customer_id: int):
             "outstanding": outstanding
         }
     )
+
+@app.get("/download-backup/{backup_name}")
+async def download_backup(backup_name: str):
+
+    backup_folder = BASE_DIR / "backups"
+    backup_path = backup_folder / backup_name
+
+    if (
+        not backup_path.is_file()
+        or backup_path.parent != backup_folder
+        or not backup_name.startswith("bakery_backup_")
+        or not backup_name.endswith(".db")
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="Backup file not found."
+        )
+
+    return FileResponse(
+        path=backup_path,
+        filename=backup_name,
+        media_type="application/octet-stream"
+    )
+
 @app.get("/backups")
 async def view_backups(request: Request):
 
