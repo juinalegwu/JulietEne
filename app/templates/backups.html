@@ -31,8 +31,7 @@
                 <tr>
                     <td>{{ backup.name }}</td>
                     <td>{{ backup.date }}</td>
-       
-             <td>
+       <td>
     <a href="/download-backup/{{ backup.name }}">
         <button type="button">Download</button>
     </a>
@@ -48,15 +47,7 @@
         <button type="submit">Restore</button>
     </form>
 </td>
-<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                              onsubmit="return confirm('Are you sure? Your current database will be replaced.')">
 
-                            <input type="hidden" name="backup_name"
-                                   value="{{ backup.name }}">
-
-                            <button type="submit">Restore</button>
-                        </form>
-                    </td>
                 </tr>
                 {% endfor %}
             </table>

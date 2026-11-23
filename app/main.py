@@ -275,7 +275,7 @@ async def create_order(
     customer_name: str = Form(...),
     customer_phone: str = Form(""),
     csrf_token: str = Form(...)
-    
+
 ):
 
     if not secrets.compare_digest(
@@ -309,32 +309,29 @@ async def create_order(
             url="/new-order",
             status_code=303
         )
-    
+
     customer_name = customer_name.strip()
 
     connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
 
     existing_customer = cursor.execute(
-        "SELECT id FROM customers WHERE name = ?",
-        (customer_name,)
-    ).fetchone()
-    if not existing_customer:
-        cursor.execute(
-        "INSERT INTO customers (name, phone) VALUES (?, ?)",
+        "SELECT id FROM customers WHERE name = ? AND phone = ?",
         (customer_name, customer_phone)
-    )
+    ).fetchone()
+
+    if existing_customer:
+        customer_id = existing_customer[0]
     else:
         cursor.execute(
-        "UPDATE customers SET phone = ? WHERE id = ?",
-        (customer_phone, existing_customer[0])
-    )
-
+            "INSERT INTO customers (name, phone) VALUES (?, ?)",
+            (customer_name, customer_phone)
+        )
+        customer_id = cursor.lastrowid
     connection.commit()
     connection.close()
 
     order_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
     save_order(
         customer_name,
         total,
@@ -343,7 +340,8 @@ async def create_order(
         None,
         order_date,
         orders,
-        0
+        0,
+        customer_id
     )
 
     return RedirectResponse(
@@ -414,12 +412,15 @@ async def submit_customer_order(
             "INSERT INTO customers (name, phone) VALUES (?, ?)",
             (customer_name, customer_phone)
         )
+    customer_id = cursor.execute(
+        "SELECT id FROM customers WHERE name = ?",
+        (customer_name,)
+    ).fetchone()[0]
 
     connection.commit()
     connection.close()
 
     order_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
     save_order(
         customer_name,
         total,
@@ -428,7 +429,8 @@ async def submit_customer_order(
         None,
         order_date,
         orders,
-        0
+        0,
+        customer_id
     )
 
     return RedirectResponse("/shop?order=received", status_code=303)
@@ -509,8 +511,8 @@ def order_details(request: Request, order_id: int, error: str = None):
         return {"error": "Order not found"}
 
     customer_phone = cursor.execute(
-        "SELECT phone FROM customers WHERE name = ?",
-        (order[1],)
+        "SELECT phone FROM customers WHERE id = ?",
+        (order[8],)
     ).fetchone()
 
     items = cursor.execute(
@@ -534,7 +536,7 @@ def order_details(request: Request, order_id: int, error: str = None):
         "payments": payments,
         "csrf_token": get_csrf_token(request),
         "customer_phone": customer_phone[0] if customer_phone else "Not provided",
-        "else": error    
+        "else": error
     }
 )
 
@@ -578,13 +580,11 @@ def record_order_payment(
     )
 
 @app.post("/orders/{order_id}/delete")
-def delete_order_page(request: Request, order_id: int, csrf_token: str = Form(...)):
-    delete_order(order_id)
-
-    return RedirectResponse(
-        url="/orders",
-        status_code=303
-    )
+def delete_order_page(
+    request: Request,
+    order_id: int,
+    csrf_token: str = Form(...)
+):
     if not secrets.compare_digest(
         csrf_token,
         request.session.get("csrf_token", "")
@@ -593,6 +593,13 @@ def delete_order_page(request: Request, order_id: int, csrf_token: str = Form(..
             status_code=403,
             detail="Invalid security token."
         )
+
+    delete_order(order_id)
+
+    return RedirectResponse(
+        url="/orders",
+        status_code=303
+    )
 
 @app.get("/orders/{order_id}/edit")
 def edit_order_page(request: Request, order_id: int, error: str = None):
@@ -609,6 +616,11 @@ def edit_order_page(request: Request, order_id: int, error: str = None):
     if order is None:
         connection.close()
         return {"error": "Order not found"}
+
+    customer_phone = cursor.execute(
+        "SELECT phone FROM customers WHERE name = ?",
+        (order[8],)
+    ).fetchone()
 
     cursor.execute("""
         SELECT product_name, quantity
@@ -629,6 +641,7 @@ def edit_order_page(request: Request, order_id: int, error: str = None):
             "order": order,
             "products": products,
             "order_items": order_items,
+            "customer_phone": customer_phone,
             "error": error,
             "csrf_token": get_csrf_token(request)
         }
@@ -651,20 +664,28 @@ async def update_order_page(
             status_code=403,
             detail="Invalid security token."
         )
-    form_data = await request.form()
-
     customer_name = form_data.get("customer_name")
     customer_phone = form_data.get("customer_phone", "")
     products = get_products()
 
     updated_orders = []
     new_total = 0
-
     for product in products:
-        quantity = int(
-            form_data.get(f"quantity_{product[0]}", 0)
-        )
+        try:
+            quantity = int(
+                form_data.get(f"quantity_{product[0]}", 0)
+            )
+        except (TypeError, ValueError):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid quantity for {product[1]}."
+            )
 
+        if quantity < 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Quantity cannot be negative."
+            )
         if quantity > 0:
             updated_orders.append(
                 (product[1], product[2], quantity)
@@ -685,9 +706,13 @@ async def update_order_page(
         return RedirectResponse(
             url=f"/orders/{order_id}/edit?error=payment",
             status_code=303
-    )
+        )
 
-    update_order_customer(order_id, customer_name)
+    update_order_customer(
+        order_id,
+        customer_name,
+        customer_phone
+    )
 
     return RedirectResponse(
         url=f"/orders/{order_id}",
@@ -820,15 +845,33 @@ async def restore_backup(
             status_code=403,
             detail="Invalid security token."
         )
-        return {"error": "Invalid backup file"}
+
+    backup_folder = BASE_DIR / "backups"
+    backup_path = backup_folder / backup_name
+
+    if (
+        not backup_path.is_file()
+        or backup_path.parent != backup_folder
+        or not backup_name.startswith("bakery_backup_")
+        or not backup_name.endswith(".db")
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail="Invalid backup file."
+        )
 
     source = sqlite3.connect(str(backup_path))
 
     try:
-        result = source.execute("PRAGMA integrity_check").fetchone()
+        result = source.execute(
+            "PRAGMA integrity_check"
+        ).fetchone()
 
         if not result or result[0] != "ok":
-            return {"error": "This backup is damaged"}
+            raise HTTPException(
+                status_code=400,
+                detail="This backup is damaged."
+            )
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         safety_file = backup_folder / f"before_restore_{timestamp}.db"
@@ -853,6 +896,6 @@ async def restore_backup(
         source.close()
 
     return RedirectResponse(
-    url="/backups?message=Database+restored+successfully",
-    status_code=303
-)
+        url="/backups?message=Database+restored+successfully",
+        status_code=303
+    )

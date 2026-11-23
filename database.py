@@ -145,7 +145,7 @@ def get_products():
 
 
 # Save a new order
-def save_order(customer_name, total, payment_method, payment_status, reference, order_date, orders, amount_paid=0):
+def save_order(customer_name, total, payment_method, payment_status, reference, order_date, orders, amount_paid=0, customer_id=None):
     connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
 
@@ -157,9 +157,10 @@ def save_order(customer_name, total, payment_method, payment_status, reference, 
         payment_status,
         reference,
         order_date,
-        amount_paid
+        amount_paid,
+        customer_id
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         customer_name,
         total,
@@ -167,7 +168,8 @@ def save_order(customer_name, total, payment_method, payment_status, reference, 
         payment_status,
         reference,
         order_date,
-        amount_paid
+        amount_paid,
+        customer_id
     ))
 
     order_id = cursor.lastrowid
@@ -252,6 +254,67 @@ def get_order_items(order_id):
 
     return items
 
+# Update products in an existing order
+def update_order_items(order_id, new_total, updated_orders):
+    connection = sqlite3.connect(DATABASE)
+    cursor = connection.cursor()
+
+    try:
+        order = cursor.execute("""
+            SELECT amount_paid
+            FROM orders
+            WHERE id = ?
+        """, (order_id,)).fetchone()
+
+        if order is None:
+            return False
+
+        amount_paid = order[0] or 0
+
+        if new_total < amount_paid or new_total < 0:
+            return False
+
+        if amount_paid == 0:
+            status = "UNPAID"
+        elif amount_paid < new_total:
+            status = "PARTIALLY PAID"
+        else:
+            status = "PAID"
+
+        cursor.execute(
+            "DELETE FROM order_items WHERE order_id = ?",
+            (order_id,)
+        )
+
+        cursor.executemany("""
+            INSERT INTO order_items (
+                order_id,
+                product_name,
+                quantity,
+                unit_price
+            )
+            VALUES (?, ?, ?, ?)
+        """, [
+            (order_id, name, quantity, price)
+            for name, price, quantity in updated_orders
+        ])
+
+        cursor.execute("""
+            UPDATE orders
+            SET total = ?, payment_status = ?
+            WHERE id = ?
+        """, (new_total, status, order_id))
+
+        connection.commit()
+        return True
+
+    except Exception:
+        connection.rollback()
+        raise
+
+    finally:
+        connection.close()
+
 # Delete an order
 def delete_order(order_id):
     connection = sqlite3.connect(DATABASE)
@@ -276,98 +339,51 @@ def delete_order(order_id):
     connection.close()
 
 # Update customer name on an order
-def update_order_customer(order_id, new_name):
+def update_order_customer(order_id, new_name, new_phone):
     connection = sqlite3.connect(DATABASE)
     cursor = connection.cursor()
 
-    cursor.execute("""
-        UPDATE orders
-        SET customer_name = ?
-        WHERE id = ?
-    """, (new_name, order_id))
+    try:
+        order = cursor.execute(
+            "SELECT customer_id FROM orders WHERE id = ?",
+            (order_id,)
+        ).fetchone()
 
-    connection.commit()
-    connection.close()
+        if not order:
+            return False
 
-def update_order_items(order_id, total, orders):
-    connection = sqlite3.connect(DATABASE)
-    cursor = connection.cursor()
+        customer_id = order[0]
 
-    # Get the amount already paid
-    cursor.execute("""
-        SELECT amount_paid
-        FROM orders
-        WHERE id = ?
-    """, (order_id,))
+        if customer_id:
+            cursor.execute("""
+                UPDATE customers
+                SET name = ?, phone = ?
+                WHERE id = ?
+            """, (new_name, new_phone, customer_id))
 
-    order = cursor.fetchone()
+        else:
+            cursor.execute("""
+                INSERT INTO customers (name, phone)
+                VALUES (?, ?)
+            """, (new_name, new_phone))
 
-    if order is None:
-        connection.close()
-        return False
+            customer_id = cursor.lastrowid
 
-    amount_paid = order[0]
-    if total < amount_paid:
-        connection.close()
-        return False
-
-    # Calculate the correct payment status
-    if amount_paid == 0:
-        status = "UNPAID"
-
-    elif amount_paid < total:
-        status = "PARTIALLY PAID"
-
-    else:
-        status = "PAID"
-
-    # Update order total and payment status
-    cursor.execute("""
-        UPDATE orders
-        SET total = ?, payment_status = ?
-        WHERE id = ?
-    """, (total, status, order_id))
-
-    # Replace old order items
-    cursor.execute("""
-        DELETE FROM order_items
-        WHERE order_id = ?
-    """, (order_id,))
-
-    for item, price, quantity in orders:
         cursor.execute("""
-            INSERT INTO order_items (
-                order_id,
-                product_name,
-                quantity,
-                unit_price
-            )
-            VALUES (?, ?, ?, ?)
-        """, (order_id, item, quantity, price))
+            UPDATE orders
+            SET customer_name = ?, customer_id = ?
+            WHERE id = ?
+        """, (new_name, customer_id, order_id))
 
-    connection.commit()
-    connection.close()
+        connection.commit()
+        return True
 
-    return True
+    except Exception:
+        connection.rollback()
+        raise
 
-# Record an additional payment
-def record_payment(order_id, amount, payment_method, reference, payment_date):
-    connection = sqlite3.connect(DATABASE)
-    cursor = connection.cursor()
-
-    cursor.execute("""
-        INSERT INTO payments (
-            order_id,
-            amount,
-            payment_method,
-            reference,
-            payment_date
-        )
-        VALUES (?, ?, ?, ?, ?)
-    """, (order_id, amount, payment_method, reference, payment_date))
-
-    connection.commit()
-    connection.close()
+    finally:
+        connection.close()
 
 # Update order payment details
 def update_order_payment(order_id, amount_paid):

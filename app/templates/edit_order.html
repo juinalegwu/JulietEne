@@ -31,7 +31,14 @@
             value="{{ order[1] }}"
             required
         >
+<br><br>
 
+<label>Customer Phone:</label>
+<input
+    type="text"
+    name="customer_phone"
+    value="{{ customer_phone[0] if customer_phone else '' }}"
+>
         <h2>Update Products</h2>
 
         {% for product in products %}
