@@ -34,22 +34,16 @@ app.mount(
     StaticFiles(directory=BASE_DIR / "app" / "static"),
     name="static"
 )
-
 @app.middleware("http")
 async def protect_admin_pages(request: Request, call_next):
 
     if (
-        request.url.path in ["/", "/login", "/shop", "/place-order"]
+        request.url.path in ["/", "/shop"]
         or request.url.path.startswith("/static/")
     ):
         return await call_next(request)
-    if not request.session.get("admin"):
-        return RedirectResponse("/login", status_code=303)
 
-    return await call_next(request)
-
-
-
+    return RedirectResponse("/", status_code=303)
 
 app.add_middleware(
     SessionMiddleware,
