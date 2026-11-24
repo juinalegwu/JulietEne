@@ -33,9 +33,9 @@
             <h3>{{ product[1] }}</h3>
             <p>₦{{ "{:,.0f}".format(product[2]) }}</p>
 
-            <a href="/place-order?product_id={{ product[0] }}">
-                Order Now
-            </a>
+           <a href="https://wa.me/2348067790577?text={{ ('Hello Juliet’s Sweet Treats! I would like to order ' ~ product[1])|urlencode }}">
+    Order Now
+</a>
         </div>
     {% endfor %}
 </div>
