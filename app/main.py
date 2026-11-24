@@ -22,11 +22,8 @@ password_hash = PasswordHash.recommended()
 SECRET_KEY = os.getenv("SECRET_KEY")
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
 ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH")
-
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATABASE = BASE_DIR / "bakery.db"
-
-
+DATABASE = Path(os.getenv("DATABASE_PATH", str(BASE_DIR / "bakery.db")))
 
 app = FastAPI(title="Juliet's Sweet Treats")
 

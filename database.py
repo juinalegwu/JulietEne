@@ -1,10 +1,14 @@
+import os
 import sqlite3
 from datetime import datetime
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent
-DATABASE = BASE_DIR / "bakery.db"
-BACKUP_DIR = BASE_DIR / "backups"
+DATABASE = Path(os.getenv("DATABASE_PATH", str(BASE_DIR / "bakery.db")))
+BACKUP_DIR = DATABASE.parent / "backups"
 
 def backup_database():
     backup_folder = BACKUP_DIR
